@@ -5,6 +5,7 @@ module BirdFSM(clk, reset_n, enable, STATE, enableDraw, shot, outOfAmmo, flying)
 	input enableDraw;
 	input shot;
 	input outOfTime;
+	input flying;
 	
 	wire [7:0] rand;
 	wire [3:0] move;

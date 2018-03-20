@@ -1,4 +1,4 @@
-module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable);
+module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable, flying);
 	input clk;
 	input reset_n;
 	input[3:0] control;
