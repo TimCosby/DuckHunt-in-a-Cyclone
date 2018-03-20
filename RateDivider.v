@@ -3,7 +3,7 @@ module RateDivider(clk, reset_n, enable);
 	input reset_n;
 	output reg enable;
 
-	wire[26:0] delay = 833332; // 1/60 Hz //49999999; // 1 Hz
+	wire[26:0] delay = 1666666; //833332; // 1/60 Hz //49999999; // 1 Hz
 	
 	reg[26:0] q = 0;
 	
