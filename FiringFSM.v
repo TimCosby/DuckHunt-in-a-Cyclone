@@ -1,19 +1,18 @@
-module FiringFSM(clk, reset_n, enable, STATE);
+module FiringFSM(clk, reset_n, gunShot, STATE);
 	input clk;
 	input reset_n;
-	input enable;
+	input gunShot;
 	
-	output[2:0] STATE;
+	output reg [2:0] STATE = 3'b010;
 
-	reg[2:0] STATE = 3'b110;
-	
-	localparam S_HOLD1 = 3'b000,
-				  S_SHOT1 = 3'b001,
-				  S_HOLD2 = 3'b010,
-				  S_SHOT2 = 3'b011,
-				  S_HOLD3 = 3'b100,
-				  S_SHOT3 = 3'b101,
-				  S_PRELOAD = 3'b110;
+	localparam S_PRELOAD = 3'b010,
+				  S_HOLD1   = 3'b000,
+				  S_SHOT1   = 3'b001,
+				  S_HOLD2   = 3'b101,
+				  S_SHOT2   = 3'b100,
+				  S_HOLD3   = 3'b110,
+				  S_SHOT3   = 3'b111,
+				  S_OUT     = 3'b011;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -27,7 +26,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 			case(STATE)
 				S_PRELOAD:
 				begin
-					if(~enable)
+					if(~gunShot)
 						STATE <= S_HOLD1;
 					else
 						STATE <= S_PRELOAD;
@@ -35,7 +34,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 			
 				S_HOLD1:
 				begin
-					if(enable)
+					if(gunShot)
 						STATE <= S_SHOT1;
 					else
 						STATE <= S_HOLD1;
@@ -43,7 +42,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 				
 				S_SHOT1:
 				begin
-					if(~enable)
+					if(~gunShot)
 						STATE <= S_HOLD2;
 					else
 						STATE <= S_SHOT1;
@@ -51,7 +50,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 				
 				S_HOLD2:
 				begin
-					if(enable)
+					if(gunShot)
 						STATE <= S_SHOT2;
 					else
 						STATE <= S_HOLD2;
@@ -59,7 +58,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 				
 				S_SHOT2:
 				begin
-					if(~enable)
+					if(~gunShot)
 						STATE <= S_HOLD3;
 					else
 						STATE <= S_SHOT2;
@@ -67,7 +66,7 @@ module FiringFSM(clk, reset_n, enable, STATE);
 				
 				S_HOLD3:
 				begin
-					if(enable)
+					if(gunShot)
 						STATE <= S_SHOT3;
 					else
 						STATE <= S_HOLD3;

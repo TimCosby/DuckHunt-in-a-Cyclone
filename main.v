@@ -5,11 +5,10 @@
 
 module main(
 		CLOCK_50,						//	On Board 50 MHz
-		// Your inputs and outputs here
-        KEY,
-        SW,
-		  LEDR,
-		  HEX0,
+      KEY,
+      SW,
+		LEDR,
+		HEX0,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -21,49 +20,104 @@ module main(
 		VGA_B   						//	VGA Blue[9:0]
 	);
 
-	input			CLOCK_50;				//	50 MHz
-	input   [9:0]   SW;
-	input   [3:0]   KEY;
-	output  [9:0] LEDR;
-	output  [6:0] HEX0;
+	input	    	 CLOCK_50;				//	50 MHz
+	input  [9:0] SW;
+	input  [3:0] KEY;
+	output [9:0] LEDR;
+	output [6:0] HEX0;
 	
 	// Declare your inputs and outputs here
 	// Do not change the following outputs
-	output			VGA_CLK;   				//	VGA Clock
-	output			VGA_HS;					//	VGA H_SYNC
-	output			VGA_VS;					//	VGA V_SYNC
-	output			VGA_BLANK_N;				//	VGA BLANK
-	output			VGA_SYNC_N;				//	VGA SYNC
-	output	[9:0]	VGA_R;   				//	VGA Red[9:0]
-	output	[9:0]	VGA_G;	 				//	VGA Green[9:0]
-	output	[9:0]	VGA_B;   				//	VGA Blue[9:0]
+	output		 VGA_CLK;   				//	VGA Clock
+	output		 VGA_HS;					//	VGA H_SYNC
+	output		 VGA_VS;					//	VGA V_SYNC
+	output		 VGA_BLANK_N;				//	VGA BLANK
+	output	 	 VGA_SYNC_N;				//	VGA SYNC
+	output [9:0] VGA_R;   				//	VGA Red[9:0]
+	output [9:0] VGA_G;	 				//	VGA Green[9:0]
+	output [9:0] VGA_B;   				//	VGA Blue[9:0]
 	
 	wire resetn;
+	wire clk;
 	
 	// Create the colour, x, y and writeEn wires that are inputs to the controller.
-	wire [2:0] Colour;
+	wire [2:0] colour;
 	wire [7:0] X;
 	wire [6:0] Y;
-	wire writeEn;
 	wire [3:0] ControlMovement;
 	wire [2:0] ControlFiring;
-	wire [1:0] RemainingShots;
-	
+	wire [1:0] RemainingShots;	
+	wire writeEn;
 	wire DelaySignal;
-	wire MovementSignal;
+	wire GunShot;
 	
-	assign resetn = ~SW[9];
-
+	assign resetn  = ~SW[9];
+	assign clk     = CLOCK_50;
+	assign gunShot = SW[0];
+	
+	assign LEDR[0] = DelaySignal;
+	assign LEDR[4:1] = ControlMovement;
+	assign LEDR[6:5] = RemainingShots;
+	assign LEDR[9:7] = ControlFiring;
+	
+   RateDivider rd(
+					.clk(clk), 
+					.reset_n(resetn), 
+					.enable(DelaySignal)
+	);
+	
+	MovementFSM mfsm0(
+					.clk(clk),
+					.reset_n(resetn),
+					.KEY(KEY),
+					.STATE(ControlMovement),
+					.doneDrawing(nextState),
+					.delayedClk(DelaySignal)
+	);
+	
+	MovementDatapath mdp0(
+							.clk(clk), 
+							.reset_n(resetn), 
+							.control(ControlMovement), 
+							.Xin(X), 
+							.Xout(X), 
+							.Yin(Y), 
+							.Yout(Y), 
+							.Colour(colour), 
+							.plot(writeEn),
+							.enable(nextState)
+	);
+	
+	FiringFSM ffsm0(
+					.clk(clk), 
+					.reset_n(resetn), 
+					.gunShot(gunShot), 
+					.STATE(ControlFiring)
+	);
+	
+	FiringDatapath fdp0(
+						.clk(clk), 
+						.reset_n(resetn), 
+						.control(ControlFiring), 
+						.RemainingShots(RemainingShots)
+	);
+	
+	seg7display(
+				.HEX(HEX0),
+				.SW({2'b00, RemainingShots})
+	);
+	
+	
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
 	// image file (.MIF) for the controller.
 	vga_adapter VGA(
 			.resetn(resetn),
-			.clock(CLOCK_50),
-			.colour(Colour),
+			.clock(clk),
+			.colour(colour),
 			.x(X),
 			.y(Y),
-			.plot(MovementSignal),
+			.plot(writeEn),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
 			.VGA_G(VGA_G),
@@ -77,60 +131,4 @@ module main(
 		defparam VGA.MONOCHROME = "FALSE";
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam VGA.BACKGROUND_IMAGE = "black.mif";
-	
-	// Put your code here. Your code should produce signals x,y,colour and writeEn/plot
-	// for the VGA controller, in addition to any other functionality your design may require.
-   RateDivider rd(
-					.clk(CLOCK_50), 
-					.reset_n(resetn), 
-					.enable(DelaySignal)
-	);
-	
-	assign LEDR[0] = DelaySignal;
-	assign LEDR[4:1] = ControlMovement;
-	assign LEDR[6:5] = RemainingShots;
-	assign LEDR[9:7] = ControlFiring;
-	
-	MovementFSM mfsm0(
-					.clk(CLOCK_50),
-					.reset_n(resetn),
-					.KEY(KEY),
-					.STATE(ControlMovement),
-					.enableDraw(nextState),
-					.enable(DelaySignal)
-	);
-	
-	MovementDatapath mdp0(
-							.clk(CLOCK_50), 
-							.reset_n(resetn), 
-							.control(ControlMovement), 
-							.Xin(X), 
-							.Xout(X), 
-							.Yin(Y), 
-							.Yout(Y), 
-							.Colour(Colour), 
-							.plot(MovementSignal),
-							.enable(nextState)
-	);
-	
-	
-	FiringFSM ffsm0(
-					.clk(CLOCK_50), 
-					.reset_n(resetn), 
-					.enable(SW[0]), 
-					.STATE(ControlFiring)
-	);
-	
-	FiringDatapath fdp0(
-						.clk(CLOCK_50), 
-						.reset_n(resetn), 
-						.control(ControlFiring), 
-						.RemainingShots(RemainingShots)
-	);
-	
-	seg7display(
-				.HEX(HEX0),
-				.SW({2'b00, RemainingShots})
-	);
-	
 endmodule
