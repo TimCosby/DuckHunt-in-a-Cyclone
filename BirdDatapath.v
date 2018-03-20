@@ -1,48 +1,56 @@
 module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable, flying);
-	input clk;
-	input reset_n;
-	input[3:0] control;
-	input[7:0] Xin;
-	input[6:0] Yin;
+	input       clk;
+	input       reset_n;
+	input [3:0] control;
+	input [7:0] Xin;
+	input [6:0] Yin;
 	
-	output[7:0] Xout;
-	output[6:0] Yout;
-	output[2:0] Colour;
-	output plot;
-	output enable;
-	output flying;
+	output reg [7:0] Xout;
+	output reg [6:0] Yout;
+	output reg [2:0] Colour;
+	output reg       plot   = 0;
+	output reg       enable = 0;
+	output reg 		  flying = 0;
 	
-	reg[7:0] Xold = 80;
-	reg[6:0] Yold = 90;
-	reg[7:0] Xhold = 80;
-	reg[6:0] Yhold = 90;
-	reg[7:0] Xout = 80;
-	reg[6:0] Yout = 90;
-	reg[2:0] Colour = 3'b111;
-	reg plot = 0;
-	reg enable = 0;
-	reg flying = 0;
+	reg [7:0] Xhold = 90;
+	reg [6:0] Yhold = 80;
+	reg [1:0] XDraw = 2'b00;
+	reg [1:0] YDraw = 2'b00;
 	
-	reg[1:0] XDraw = 2'b00;
-	reg[1:0] YDraw = 2'b00;
+	localparam S_HOLD = 4'b0000,
+				  S_B_LEFT = 4'b0001,
+				  S_B_RIGHT = 4'b0010,
+				  S_B_UP = 4'b0011,
+				  S_B_DOWN = 4'b0100,
+				  S_B_CLEAR = 4'b0101,
+				  S_B_DRAW = 4'b0110,
+				  S_B_SHOT = 4'b0111,
+				  S_B_ESCAPE = 4'b1000,
+				  S_B_CHECK = 4'b1001,
+				  S_PREHOLD = 4'b1011;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
 		if(~reset_n)
 		begin
-			Xold <= Xin;
-			Yold <= Yin;
-			Xout <= 80;
-			Yout <= 90;
+			Xhold  <= Xin;
+			Yhold  <= Yin;
+			Xout   <= 90;
+			Yout   <= 80;
+			XDraw  <= 2'b00;
+			YDraw  <= 2'b00;
 			Colour <= 3'b111;
-			XDraw <= 2'b00;
-			YDraw <= 2'b00;
 		end
 		
 		else
 		begin
 			case(control)
-				4'b0001: // Left
+				S_B_CLEAR:
+				begin
+					Colour <= 3'b000;
+				end
+			
+				S_B_LEFT: 
 				begin
 					if(Xin > 0)
 						Xhold <= Xin - 1;
@@ -50,7 +58,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 						Xhold <= Xin;
 				end
 				
-				4'b0010: // Right
+				S_B_RIGHT: 
 				begin
 					if(Xin < 160) // Max width
 						Xhold <= Xin + 1;
@@ -58,15 +66,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 						Xhold <= Xin;
 				end
 				
-				4'b0011: // UP
-				begin
-					if(Yin > 0)
-						Yhold <= Yin - 1;
-					else
-						Yhold <= Yin;
-				end
-				
-				4'b0100: // Down
+				S_B_DOWN:
 				begin
 					if(Yin < 120) // Max height
 						Yhold <= Yin + 1;
@@ -74,92 +74,67 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 						Yhold <= Yin;
 				end
 				
-				4'b0101: // Clear
+				S_B_UP: // UP
 				begin
-					Colour <= 3'b000;
+					if(Yin > 0)
+						Yhold <= Yin - 1;
+					else
+						Yhold <= Yin;
 				end
 				
-				4'b0110: // Draw
+				S_B_DRAW: // Draw
 				begin
-					if(enable)
-					begin
-						enable <= 0;
-						XDraw <= 2'b00;
-						YDraw <= 2'b00;
-						Xold <= Xhold;
-						Yold <= Yhold;
-					end
-
 					Colour <= 3'b111;
 				end
 				
-				4'b0111: // Shot
+				S_B_SHOT: // Shot
 				begin
-					if(enable && Yin < 120)
+					if(Yin < 120)
 					begin
 						Yhold <= Yin + 1;
 						flying <= 1;
 					end
 					else
 						flying <= 0;
-					if(enable && flying)
-					begin
-						enable <= 0;
-						XDraw <= 2'b00;
-						YDraw <= 2'b00;
-						Yold <= Yhold;
-					end
-
-					Colour <= 3'b111;
 				end
 				
-				4'b1000: // Escape
+				S_B_ESCAPE: // Escape
 				begin
-					if(enable && Yin > 0)
+					if(Yin > 0)
 					begin
 						Yhold <= Yin - 1;
 						flying <= 1;
 					end
 					else
 						flying <= 0;
-					if(enable && flying)
-					begin
-						enable <= 0;
-						XDraw <= 2'b00;
-						YDraw <= 2'b00;
-						Yold <= Yhold;
-					end
-
-					Colour <= 3'b111;
 				end
 			endcase
 			
-			if(control == 4'b0101 || control == 4'b0110)
+			if(control == S_B_CLEAR || control == S_B_DRAW)
 			begin
-				plot <= 1;
+				plot <= 1; // Allows VGA to display the current pixel
 				
-				Xout <= Xold + XDraw;
-				Yout <= Yold + YDraw;
+				Xout <= Xhold + XDraw; // Sets the current x pixel @ current draw + increment
+				Yout <= Yhold + YDraw; // y pixel
 				
 				if(XDraw == 2'b11)
 				begin
 					if(YDraw == 2'b11)
 					begin
-						enable <= 1;
+						enable <= 1; // Tell the FSM that we are done drawing.
+						// (Don't plot <= 0 here because the last pixel still needs to be drawn first)
 					end
 					
-					YDraw <= YDraw + 1;
+					YDraw <= YDraw + 1; // Increase y increment
 				end
 				
-				XDraw <= XDraw + 1;
+				XDraw <= XDraw + 1; // Increase x increment
 			end
 			
 			else
 			begin
 				enable <= 0;
-				XDraw <= 2'b00;
-				YDraw <= 2'b00;
-				plot <= 0;
+				plot   <= 0;
 			end
 		end
 	end

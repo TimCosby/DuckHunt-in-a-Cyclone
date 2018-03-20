@@ -4,7 +4,7 @@ module BirdFSM(clk, reset_n, enable, STATE, enableDraw, shot, outOfAmmo, flying)
 	input enable;
 	input enableDraw;
 	input shot;
-	input outOfTime;
+	input outOfAmmo;
 	input flying;
 	
 	wire [7:0] rand;
@@ -28,7 +28,8 @@ module BirdFSM(clk, reset_n, enable, STATE, enableDraw, shot, outOfAmmo, flying)
 				  S_B_DRAW = 4'b0110,
 				  S_B_SHOT = 4'b0111,
 				  S_B_ESCAPE = 4'b1000,
-				  S_PREHOLD = 4'b1001;
+				  S_B_CHECK = 4'b1001,
+				  S_PREHOLD = 4'b1011;
 				  
 	
 	always @ (posedge clk, negedge reset_n)
@@ -51,18 +52,20 @@ module BirdFSM(clk, reset_n, enable, STATE, enableDraw, shot, outOfAmmo, flying)
 				
 				S_B_SHOT:
 				begin
-					if(enableDraw &&~flying)
-						STATE <= S_PREHOLD;
-					else
-						STATE <= S_B_SHOT;
+					STATE <= S_B_CHECK;
 				end
 				
 				S_B_ESCAPE:
 				begin
-					if(enableDraw &&~flying)
+					STATE <= S_B_CHECK;
+				end
+				
+				S_B_CHECK:
+				begin
+					if(~flying)
 						STATE <= S_PREHOLD;
 					else
-						STATE <= S_B_ESCAPE;
+						STATE <= S_B_CLEAR;
 				end
 				
 				S_HOLD:
@@ -124,9 +127,9 @@ module BirdFSM(clk, reset_n, enable, STATE, enableDraw, shot, outOfAmmo, flying)
 					if(enableDraw && shot)
 						STATE <= S_B_SHOT;
 					else if(enableDraw && outOfAmmo)
-						state <= S_B_ESCAPE;
+						STATE <= S_B_ESCAPE;
 					else if(enableDraw)
-						STATE <= S_HOLD
+						STATE <= S_HOLD;
 					else
 						STATE <= S_B_DRAW;
 				end
