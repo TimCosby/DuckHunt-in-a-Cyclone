@@ -1,9 +1,11 @@
-module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable, flying);
+module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplayer, Colour, plot, enable, flying, shot);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
 	input [7:0] Xin;
 	input [6:0] Yin;
+	input [7:0] Xplayer;
+	input [6:0] Yplayer;
 	
 	output reg [7:0] Xout;
 	output reg [6:0] Yout;
@@ -11,6 +13,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	output reg 		  flying = 0;
+	output reg		  shot = 0;
 	
 	reg [7:0] Xhold = 90;
 	reg [6:0] Yhold = 80;
@@ -28,6 +31,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				  S_B_ESCAPE = 4'b1000,
 				  S_B_CHECK = 4'b1001,
 				  S_PREHOLD = 4'b1011;
+				  
+	localparam HITBOX_LEN = 1'd4;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -84,6 +89,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				
 				S_B_DRAW: // Draw
 				begin
+					if (Xhold <= Xplayer && Xhold + (HITBOX_LEN - 1) >= Xplayer &&  Yhold <= Yplayer && Yhold + (HITBOX_LEN - 1) >= Yplayer)
+						shot <= 1;
 					Colour <= 3'b111;
 				end
 				
@@ -95,7 +102,10 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 						flying <= 1;
 					end
 					else
+					begin
 						flying <= 0;
+						shot <= 0;
+					end
 				end
 				
 				S_B_ESCAPE: // Escape
