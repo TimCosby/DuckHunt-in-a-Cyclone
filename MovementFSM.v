@@ -5,7 +5,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 	input doneDrawing;
 	input delayedClk;
 	
-	output reg [3:0] STATE = 4'b0000;
+	output reg [3:0] STATE = S_P_DRAW;
 	
 	wire RIGHT = ~KEY[0];
 	wire DOWN  = ~KEY[1];
@@ -25,7 +25,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 	begin
 		if(~reset_n)
 		begin
-			STATE <= 4'b0000;
+			STATE <= S_PREHOLD;
 		end
 		
 		else

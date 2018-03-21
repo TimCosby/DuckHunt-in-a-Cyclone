@@ -3,7 +3,7 @@ module FiringFSM(clk, reset_n, gunShot, STATE);
 	input reset_n;
 	input gunShot;
 	
-	output reg [2:0] STATE = 3'b010;
+	output reg [2:0] STATE = S_PRELOAD;
 
 	localparam S_PRELOAD = 3'b010,
 				  S_HOLD1   = 3'b000,
@@ -18,7 +18,7 @@ module FiringFSM(clk, reset_n, gunShot, STATE);
 	begin
 		if(~reset_n)
 		begin
-			STATE <= 3'b110;
+			STATE <= S_PRELOAD;
 		end
 		
 		else

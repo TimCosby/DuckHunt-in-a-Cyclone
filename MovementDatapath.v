@@ -7,14 +7,13 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 	
 	output reg [7:0] Xout;
 	output reg [6:0] Yout;
-	output reg [2:0] Colour;
+	output reg [2:0] Colour = 3'b100;
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	
-	reg [7:0] Xhold = 50;
-	reg [6:0] Yhold = 50;
-	reg [1:0] XDraw = 2'b00;
-	reg [1:0] YDraw = 2'b00;
+	reg [7:0] Xhold;
+	reg [6:0] Yhold;
+	reg [3:0] drawCounter = 4'b0000;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -29,17 +28,15 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 	begin
 		if(~reset_n)
 		begin
-			Xhold  <= Xin;
-			Yhold  <= Yin;
-			Xout   <= 50;
-			Yout   <= 50;
-			XDraw  <= 2'b00;
-			YDraw  <= 2'b00;
+			Xhold  <= 50;
+			Yhold  <= 50;
 			Colour <= 3'b100;
 		end
 		
 		else
 		begin
+			enable <= 0;
+			
 			case(control)
 				S_P_CLEAR:
 				begin
@@ -88,26 +85,20 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 			begin
 				plot <= 1; // Allows VGA to display the current pixel
 				
-				Xout <= Xhold + XDraw; // Sets the current x pixel @ current draw + increment
-				Yout <= Yhold + YDraw; // y pixel
+				Xout <= Xhold + drawCounter[1:0]; // Sets the current x pixel @ current draw + increment
+				Yout <= Yhold + drawCounter[3:2]; // y pixel
 				
-				if(XDraw == 2'b11)
+				if(drawCounter == 4'b1111)
 				begin
-					if(YDraw == 2'b11)
-					begin
-						enable <= 1; // Tell the FSM that we are done drawing.
-						// (Don't plot <= 0 here because the last pixel still needs to be drawn first)
-					end
-					
-					YDraw <= YDraw + 1; // Increase y increment
+					enable <= 1; // Tell the FSM that we are done drawing.
+					// (Don't plot <= 0 here because the last pixel still needs to be drawn first)
 				end
 				
-				XDraw <= XDraw + 1; // Increase x increment
+				drawCounter <= drawCounter + 1; // Increase x increment
 			end
 			
 			else
 			begin
-				enable <= 0;
 				plot   <= 0;
 			end
 		end

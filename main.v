@@ -56,7 +56,11 @@ module main(
 	assign gunShot = SW[0];
 	
 	assign LEDR[0] = DelaySignal;
-	assign LEDR[4:1] = ControlMovement;
+	//assign LEDR[4:1] = ControlMovement;
+	assign LEDR[1] = KEY[0];
+	assign LEDR[2] = KEY[1];
+	assign LEDR[3] = KEY[2];
+	assign LEDR[4] = KEY[3];
 	assign LEDR[6:5] = RemainingShots;
 	assign LEDR[9:7] = ControlFiring;
 	
@@ -89,14 +93,14 @@ module main(
 	);
 	
 	FiringFSM ffsm0(
-					.clk(clk), 
+					.clk(DelaySignal), 
 					.reset_n(resetn), 
 					.gunShot(gunShot), 
 					.STATE(ControlFiring)
 	);
 	
 	FiringDatapath fdp0(
-						.clk(clk), 
+						.clk(DelaySignal), 
 						.reset_n(resetn), 
 						.control(ControlFiring), 
 						.RemainingShots(RemainingShots)
