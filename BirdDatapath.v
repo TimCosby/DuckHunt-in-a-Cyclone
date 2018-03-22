@@ -1,4 +1,4 @@
-module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplayer, Colour, plot, enable, flying, shot);
+module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplayer, Colour, plot, enable, flying, firing, shot);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
@@ -6,6 +6,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 	input [6:0] Yin;
 	input [7:0] Xplayer;
 	input [6:0] Yplayer;
+	input firing;
 	
 	output reg [7:0] Xout;
 	output reg [6:0] Yout;
@@ -20,17 +21,17 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 	reg [1:0] XDraw = 2'b00;
 	reg [1:0] YDraw = 2'b00;
 	
-	localparam S_HOLD = 4'b0000,
-				  S_B_LEFT = 4'b0001,
-				  S_B_RIGHT = 4'b0010,
-				  S_B_UP = 4'b0011,
-				  S_B_DOWN = 4'b0100,
-				  S_B_CLEAR = 4'b0101,
-				  S_B_DRAW = 4'b0110,
-				  S_B_SHOT = 4'b0111,
-				  S_B_ESCAPE = 4'b1000,
-				  S_B_CHECK = 4'b1001,
-				  S_PREHOLD = 4'b1011;
+	
+	localparam S_PREHOLD = 4'b0100,
+				  S_HOLD    = 4'b0000,
+				  S_B_CLEAR = 4'b0001,
+				  S_B_UP_RIGHT  = 4'b0011,
+				  S_B_UP_LEFT = 4'b0010,
+				  S_B_DOWN_RIGHT  = 4'b0110,
+				  S_B_DOWN_LEFT    = 4'b0111,
+				  S_B_DRAW  = 4'b0101,
+				  S_B_SHOT = 4'b1000,
+				  S_B_ESCAPE = 4'b1001;
 				  
 	localparam HITBOX_LEN = 1'd4;
 	
@@ -55,50 +56,70 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 					Colour <= 3'b000;
 				end
 			
-				S_B_LEFT: 
+				S_B_UP_RIGHT: 
 				begin
-					if(Xin > 0)
-						Xhold <= Xin - 1;
-					else
-						Xhold <= Xin;
-				end
-				
-				S_B_RIGHT: 
-				begin
-					if(Xin < 160) // Max width
+					if(Xin < 160)
 						Xhold <= Xin + 1;
 					else
 						Xhold <= Xin;
-				end
-				
-				S_B_DOWN:
-				begin
-					if(Yin < 120) // Max height
-						Yhold <= Yin + 1;
-					else
-						Yhold <= Yin;
-				end
-				
-				S_B_UP: // UP
-				begin
+						
 					if(Yin > 0)
 						Yhold <= Yin - 1;
 					else
 						Yhold <= Yin;
 				end
 				
+				S_B_UP_LEFT: 
+				begin					
+					if(Xin > 0)
+						Xhold <= Xin - 1;
+					else
+						Xhold <= Xin;
+						
+					if(Yin > 0)
+						Yhold <= Yin - 1;
+					else
+						Yhold <= Yin;
+				end
+				
+				S_B_DOWN_RIGHT:
+				begin
+					if(Xin < 160)
+						Xhold <= Xin + 1;
+					else
+						Xhold <= Xin;
+				
+					if(Yin < 120)
+						Yhold <= Yin + 1;
+					else
+						Yhold <= Yin;
+				end
+				
+				S_B_DOWN_LEFT:
+				begin
+					if(Xin > 0)
+						Xhold <= Xin - 1;
+					else
+						Xhold <= Xin;
+						
+					if(Yin < 120)
+						Yhold <= Yin + 1;
+					else
+						Yhold <= Yin;
+				end
+				
 				S_B_DRAW: // Draw
 				begin
-					if (Xhold <= Xplayer && Xhold + (HITBOX_LEN - 1) >= Xplayer &&  Yhold <= Yplayer && Yhold + (HITBOX_LEN - 1) >= Yplayer)
+					if (Xhold <= Xplayer && Xhold + (HITBOX_LEN - 1) >= Xplayer &&  Yhold <= Yplayer && Yhold + (HITBOX_LEN - 1) >= Yplayer && firing)
 						shot <= 1;
 					Colour <= 3'b111;
 				end
 				
 				S_B_SHOT: // Shot
 				begin
-					if(Yin < 120)
+					if(Yin > 0)
 					begin
-						Yhold <= Yin + 1;
+						Yhold <= Yin - 1;
 						flying <= 1;
 					end
 					else
@@ -110,9 +131,9 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 				
 				S_B_ESCAPE: // Escape
 				begin
-					if(Yin > 0)
+				if(Yin < 120)
 					begin
-						Yhold <= Yin - 1;
+						Yhold <= Yin + 1;
 						flying <= 1;
 					end
 					else
