@@ -5,12 +5,14 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 	input doneDrawing;
 	input delayedClk;
 	
-	output reg [3:0] STATE = S_P_DRAW;
+	output reg [3:0] STATE = S_PREHOLD;
 	
 	wire RIGHT = ~KEY[0];
 	wire DOWN  = ~KEY[1];
 	wire UP    = ~KEY[2];
 	wire LEFT  = ~KEY[3];
+	
+	reg reset = 0;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -25,7 +27,8 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 	begin
 		if(~reset_n)
 		begin
-			STATE <= S_PREHOLD;
+			STATE <= S_P_CLEAR;
+			reset <= 1;
 		end
 		
 		else
@@ -50,6 +53,12 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 				S_P_CLEAR: // Wipes away previous failures
 				begin
 					if(doneDrawing)
+					begin
+						if(reset)
+						begin
+							STATE <= S_P_DRAW;
+							reset <= 0;
+						end
 						if(RIGHT)
 							STATE <= S_P_RIGHT;
 						else if(LEFT)
@@ -60,6 +69,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 							STATE <= S_P_UP;
 						else
 							STATE <= S_P_DRAW;
+					end
 					else
 						STATE <= S_P_CLEAR;
 				end
@@ -93,10 +103,12 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 				S_P_DRAW:
 				begin
 					if(doneDrawing)
+					begin
 						if(delayedClk)
 							STATE <= S_PREHOLD;
 						else
 							STATE <= S_HOLD;
+					end
 					else
 						STATE <= S_P_DRAW;
 				end

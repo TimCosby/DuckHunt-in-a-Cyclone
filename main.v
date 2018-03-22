@@ -36,41 +36,62 @@ module main(
 	output [9:0] VGA_R;   				//	VGA Red[9:0]
 	output [9:0] VGA_G;	 				//	VGA Green[9:0]
 	output [9:0] VGA_B;   				//	VGA Blue[9:0]
+
+	reg [7:0] X = 50;
+	reg [6:0] Y = 50;
 	
 	wire resetn;
 	wire clk;
-	
-	// Create the colour, x, y and writeEn wires that are inputs to the controller.
 	wire [2:0] colour;
-	wire [7:0] X;
-	wire [6:0] Y;
+	wire [7:0] XPlayer;
+	wire [7:0] XBird;
+	wire [7:0] XFire;
+	wire [6:0] YPlayer;
+	wire [6:0] YBird;
+	wire [6:0] YFire;
 	wire [3:0] ControlMovement;
 	wire [2:0] ControlFiring;
 	wire [1:0] RemainingShots;	
-	wire writeEn;
-	wire DelaySignal;
-	wire GunShot;
+	wire       writeEn;
+	wire       DelaySignal;
+	wire		  fireDelay;
+	wire       GunShot;
+	reg [1:0] done = 2'b00;
 	
 	assign resetn  = ~SW[9];
 	assign clk     = CLOCK_50;
 	assign gunShot = SW[0];
 	
-	assign LEDR[0] = DelaySignal;
-	//assign LEDR[4:1] = ControlMovement;
-	assign LEDR[1] = KEY[0];
-	assign LEDR[2] = KEY[1];
-	assign LEDR[3] = KEY[2];
-	assign LEDR[4] = KEY[3];
-	assign LEDR[6:5] = RemainingShots;
-	assign LEDR[9:7] = ControlFiring;
+	assign LEDR[3:0] = ControlMovement;
+	assign LEDR[5:4] = ControlFiring;
 	
-   RateDivider rd(
+   RateDivider rd0(
 					.clk(clk), 
 					.reset_n(resetn), 
 					.enable(DelaySignal)
 	);
 	
-	MovementFSM mfsm0(
+	RateDivider rd1(
+					.clk(DelaySignal),
+					.reset_n(reset_n),
+					.enable(fireDelay)
+	);
+	
+	always @ (posedge clk)
+	begin
+		if(done == 2'b00)
+		begin
+			X <= XPlayer;
+			Y <= YPlayer;
+		end
+		else if(done == 2'b10)
+		begin
+			X <= XFire;
+			Y <= YFire;
+		end
+	end
+	
+	MovementFSM mfsm0( // Takes 14 ticks at most
 					.clk(clk),
 					.reset_n(resetn),
 					.KEY(KEY),
@@ -83,10 +104,10 @@ module main(
 							.clk(clk), 
 							.reset_n(resetn), 
 							.control(ControlMovement), 
-							.Xin(X), 
-							.Xout(X), 
-							.Yin(Y), 
-							.Yout(Y), 
+							.Xin(XPlayer), 
+							.Xout(XPlayer), 
+							.Yin(YPlayer), 
+							.Yout(YPlayer), 
 							.Colour(colour), 
 							.plot(writeEn),
 							.enable(nextState)
@@ -94,14 +115,14 @@ module main(
 	
 	FiringFSM ffsm0(
 					.clk(DelaySignal), 
-					.reset_n(resetn), 
+					.reset_n(resetn),
 					.gunShot(gunShot), 
 					.STATE(ControlFiring)
 	);
 	
 	FiringDatapath fdp0(
 						.clk(DelaySignal), 
-						.reset_n(resetn), 
+						.reset_n(resetn),
 						.control(ControlFiring), 
 						.RemainingShots(RemainingShots)
 	);
@@ -119,8 +140,8 @@ module main(
 			.resetn(resetn),
 			.clock(clk),
 			.colour(colour),
-			.x(X),
-			.y(Y),
+			.x(XPlayer),
+			.y(YPlayer),
 			.plot(writeEn),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
@@ -134,5 +155,5 @@ module main(
 		defparam VGA.RESOLUTION = "160x120";
 		defparam VGA.MONOCHROME = "FALSE";
 		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black.mif";
+		defparam VGA.BACKGROUND_IMAGE = "black	.mif";
 endmodule

@@ -5,15 +5,16 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 	input [7:0] Xin;
 	input [6:0] Yin;
 	
-	output reg [7:0] Xout;
-	output reg [6:0] Yout;
+	output reg [7:0] Xout = 50;
+	output reg [6:0] Yout = 50;
 	output reg [2:0] Colour = 3'b100;
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	
+	reg       reset;
 	reg [7:0] Xhold;
 	reg [6:0] Yhold;
-	reg [3:0] drawCounter = 4'b0000;
+	reg [1:0] drawCounter = 2'b00;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -28,15 +29,13 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 	begin
 		if(~reset_n)
 		begin
-			Xhold  <= 50;
-			Yhold  <= 50;
-			Colour <= 3'b100;
+			reset <= 1;
+			enable <= 0;
+			drawCounter <= 2'b00;
 		end
 		
 		else
 		begin
-			enable <= 0;
-			
 			case(control)
 				S_P_CLEAR:
 				begin
@@ -46,33 +45,33 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 				S_P_LEFT: 
 				begin
 					if(Xin > 0)
-						Xhold <= Xin - 1;
+						Xhold <= Xhold - 1;
 					else
-						Xhold <= Xin;
+						Xhold <= Xhold;
 				end
 				
 				S_P_RIGHT: 
 				begin
 					if(Xin < 160) // Max width
-						Xhold <= Xin + 1;
+						Xhold <= Xhold + 1;
 					else
-						Xhold <= Xin;
+						Xhold <= Xhold;
 				end
 				
 				S_P_DOWN:
 				begin
 					if(Yin < 120) // Max height
-						Yhold <= Yin + 1;
+						Yhold <= Yhold + 1;
 					else
-						Yhold <= Yin;
+						Yhold <= Yhold;
 				end
 				
 				S_P_UP: // UP
 				begin
 					if(Yin > 0)
-						Yhold <= Yin - 1;
+						Yhold <= Yhold - 1;
 					else
-						Yhold <= Yin;
+						Yhold <= Yhold;
 				end
 				
 				S_P_DRAW: // Draw
@@ -83,23 +82,49 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 			
 			if(control == S_P_CLEAR || control == S_P_DRAW)
 			begin
-				plot <= 1; // Allows VGA to display the current pixel
-				
-				Xout <= Xhold + drawCounter[1:0]; // Sets the current x pixel @ current draw + increment
-				Yout <= Yhold + drawCounter[3:2]; // y pixel
-				
-				if(drawCounter == 4'b1111)
+				enable <= 0;
+				plot <= 1;
+				if(drawCounter == 2'b00)
 				begin
-					enable <= 1; // Tell the FSM that we are done drawing.
-					// (Don't plot <= 0 here because the last pixel still needs to be drawn first)
+					Xout <= Xhold + 1;
+					Yout <= Yhold;
 				end
 				
-				drawCounter <= drawCounter + 1; // Increase x increment
+				else if(drawCounter == 2'b01)
+				begin
+					Xout <= Xhold;
+					Yout <= Yhold + 1;
+				end
+				
+				else if(drawCounter == 2'b10)
+				begin
+					Xout <= Xhold + 2;
+					Yout <= Yhold + 1;
+				end
+				
+				else if(drawCounter == 2'b11)
+				begin
+					Xout <= Xhold + 1;
+					Yout <= Yhold + 2;
+					enable <= 1;
+				
+					if(reset && control == S_P_CLEAR)
+					begin
+						Xhold  <= 50;
+						Yhold  <= 50;
+						reset <= 0;
+					end
+				end
+				
+				else
+					plot <= 0;
+					
+				drawCounter <= drawCounter + 1;
 			end
 			
 			else
 			begin
-				plot   <= 0;
+				plot <= 0;
 			end
 		end
 	end
