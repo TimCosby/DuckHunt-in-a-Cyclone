@@ -9,13 +9,17 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 	
 	output reg [3:0] STATE = S_B_DRAW;
 	
+	wire [27:0] q;
+	wire bclk;
 	wire [7:0] rand;
 	wire [1:0] move;
 	wire overflow;
 	
+	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
 	
-	lfsr_updown L0(clk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
+	RateDivider RTD0(49999999, q, clk, reset_n, 0, 1);
+	lfsr_updown L0(bclk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
 	
 	wire UP_RIGHT = 2'b00;
 	wire UP_LEFT = 2'b01;
@@ -120,5 +124,31 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				end
 			endcase
 		end
+	end
+endmodule
+
+module RateDividerB(d, q, clock, reset_n, par_load, enable);
+	input [27:0] d;
+	input clock;
+	input reset_n;
+	input par_load, enable;
+	
+	output q;
+	
+	reg [27:0] q;
+
+	always @(posedge clock)
+	begin
+		if (reset_n == 1'b0)
+			q <= 0;
+		else if (par_load == 1'b1)
+			q <= d;
+		else if (enable == 1'b1)
+			begin
+				if (q == 0)
+					q <= d;
+				else
+					q <= q - 1;
+			end
 	end
 endmodule
