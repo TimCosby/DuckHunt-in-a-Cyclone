@@ -16,8 +16,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 	output reg 		  flying = 0;
 	output reg		  shot = 0;
 	
-	reg [7:0] Xhold = 90;
-	reg [6:0] Yhold = 80;
+	reg [7:0] Xhold = 80;
+	reg [6:0] Yhold = 60;
 	reg [1:0] XDraw = 2'b00;
 	reg [1:0] YDraw = 2'b00;
 	
@@ -31,7 +31,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 				  S_B_DOWN_LEFT    = 4'b0111,
 				  S_B_DRAW  = 4'b0101,
 				  S_B_SHOT = 4'b1000,
-				  S_B_ESCAPE = 4'b1001;
+				  S_B_ESCAPE = 4'b1001,
+				  S_RESET = 4'b1010;
 				  
 	localparam HITBOX_LEN = 1'd4;
 	
@@ -41,8 +42,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 		begin
 			Xhold  <= Xin;
 			Yhold  <= Yin;
-			Xout   <= 90;
-			Yout   <= 80;
+			Xout   <= 80;
+			Yout   <= 60;
 			XDraw  <= 2'b00;
 			YDraw  <= 2'b00;
 			Colour <= 3'b111;
@@ -51,6 +52,17 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 		else
 		begin
 			case(control)
+				S_RESET:
+				begin
+					Xhold  <= Xin;
+					Yhold  <= Yin;
+					Xout   <= 80;
+					Yout   <= 60;
+					XDraw  <= 2'b00;
+					YDraw  <= 2'b00;
+					Colour <= 3'b111;
+				end
+			
 				S_B_CLEAR:
 				begin
 					Colour <= 3'b000;
@@ -131,7 +143,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 				
 				S_B_ESCAPE: // Escape
 				begin
-				if(Yin < 120)
+				if(Yin < 124)
 					begin
 						Yhold <= Yin + 1;
 						flying <= 1;

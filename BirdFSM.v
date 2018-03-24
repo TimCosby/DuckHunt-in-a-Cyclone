@@ -18,7 +18,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
 	
-	RateDivider RTD0(49999999, q, clk, reset_n, 0, 1);
+	RateDividerB RTD0(49999999, q, clk, reset_n, 0, 1);
 	lfsr_updown L0(bclk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
 	
 	wire UP_RIGHT = 2'b00;
@@ -35,7 +35,8 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				  S_B_DOWN_LEFT    = 4'b0111,
 				  S_B_DRAW  = 4'b0101,
 				  S_B_SHOT = 4'b1000,
-				  S_B_ESCAPE = 4'b1001;
+				  S_B_ESCAPE = 4'b1001,
+				  S_RESET = 4'b1010;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -47,6 +48,9 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 		else
 		begin
 			case(STATE)
+				S_RESET: // Resets the birds position after it leaves the screen
+					STATE <= S_PREHOLD;
+			
 				S_PREHOLD:
 				begin
 					if(~delayedClk) // Until off tick
@@ -58,17 +62,17 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_SHOT:
 				begin
 					if(~flying)
-						STATE <= S_PREHOLD;
+						STATE <= S_RESET;
 					else
-						STATE <= S_B_CLEAR;
+						STATE <= S_PREHOLD;
 				end
 				
 				S_B_ESCAPE:
 				begin
 					if(~flying)
-						STATE <= S_PREHOLD;
+						STATE <= S_RESET;
 					else
-						STATE <= S_B_CLEAR;
+						STATE <= S_PREHOLD;
 				end
 				
 				S_HOLD:
