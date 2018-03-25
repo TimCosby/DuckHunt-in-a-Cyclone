@@ -14,6 +14,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 	wire [7:0] rand;
 	wire [1:0] move;
 	wire overflow;
+	reg inAnimation;
 	
 	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
@@ -49,7 +50,10 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 		begin
 			case(STATE)
 				S_RESET: // Resets the birds position after it leaves the screen
+				begin
+					inAnimation <= 0;
 					STATE <= S_PREHOLD;
+				end
 			
 				S_PREHOLD:
 				begin
@@ -62,7 +66,10 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_SHOT:
 				begin
 					if(~flying)
+					begin
+						inAnimation <= 1;
 						STATE <= S_RESET;
+					end
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -70,7 +77,10 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_ESCAPE:
 				begin
 					if(~flying)
+					begin
+						inAnimation <= 1;
 						STATE <= S_RESET;
+					end
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -115,9 +125,9 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_DRAW:
 				begin
 					if(doneDrawing)
-						if(delayedClk && shot)
+						if(delayedClk && (shot || inAnimation))
 							STATE <= S_B_SHOT;
-						else if(delayedClk && outOfAmmo)
+						else if(delayedClk && (outOfAmmo || inAnimation))
 							STATE <= S_B_ESCAPE;
 						else if(delayedClk)
 							STATE <= S_PREHOLD;

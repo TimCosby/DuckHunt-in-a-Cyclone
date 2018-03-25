@@ -1,12 +1,9 @@
-module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplayer, Colour, plot, enable, flying, firing, shot);
+module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable, flying);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
 	input [7:0] Xin;
 	input [6:0] Yin;
-	input [7:0] Xplayer;
-	input [6:0] Yplayer;
-	input firing;
 	
 	output reg [7:0] Xout;
 	output reg [6:0] Yout;
@@ -14,7 +11,6 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	output reg 		  flying = 0;
-	output reg		  shot = 0;
 	
 	reg [7:0] Xhold = 80;
 	reg [6:0] Yhold = 60;
@@ -122,8 +118,6 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 				
 				S_B_DRAW: // Draw
 				begin
-					if (Xhold <= Xplayer && Xhold + (HITBOX_LEN - 1) >= Xplayer &&  Yhold <= Yplayer && Yhold + (HITBOX_LEN - 1) >= Yplayer && firing)
-						shot <= 1;
 					Colour <= 3'b111;
 				end
 				
@@ -137,7 +131,6 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Xplayer, Yin, Yout, Yplaye
 					else
 					begin
 						flying <= 0;
-						shot <= 0;
 					end
 				end
 				
