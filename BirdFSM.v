@@ -66,10 +66,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_SHOT:
 				begin
 					if(~flying)
-					begin
-						inAnimation <= 1;
 						STATE <= S_RESET;
-					end
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -77,10 +74,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_ESCAPE:
 				begin
 					if(~flying)
-					begin
-						inAnimation <= 1;
 						STATE <= S_RESET;
-					end
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -126,9 +120,15 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				begin
 					if(doneDrawing)
 						if(delayedClk && (shot || inAnimation))
+						begin
+							inAnimation <= 1;
 							STATE <= S_B_SHOT;
+						end
 						else if(delayedClk && (outOfAmmo || inAnimation))
+						begin
+							inAnimation <= 1;
 							STATE <= S_B_ESCAPE;
+						end
 						else if(delayedClk)
 							STATE <= S_PREHOLD;
 						else
