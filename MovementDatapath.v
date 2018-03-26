@@ -52,7 +52,7 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 				
 				S_P_RIGHT: 
 				begin
-					if(Xin < 160) // Max width
+					if(Xin < 158) // Max width
 						Xhold <= Xhold + 1;
 					else
 						Xhold <= Xhold;
@@ -60,7 +60,7 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 				
 				S_P_DOWN:
 				begin
-					if(Yin < 120) // Max height
+					if(Yin < 117) // Max height
 						Yhold <= Yhold + 1;
 					else
 						Yhold <= Yhold;

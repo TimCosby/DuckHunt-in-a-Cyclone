@@ -18,8 +18,8 @@
 # -------------------------------------------------------------------------- #
 #
 # Quartus Prime
-# Version 17.0.0 Build 595 04/25/2017 SJ Lite Edition
-# Date created = 21:35:37  March 18, 2018
+# Version 17.0.0 Build 595 04/25/2017 SJ Standard Edition
+# Date created = 16:41:03  March 26, 2018
 #
 # -------------------------------------------------------------------------- #
 #
@@ -41,15 +41,12 @@ set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEMA5F31C6
 set_global_assignment -name TOP_LEVEL_ENTITY main
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.0.0
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "21:35:37  MARCH 18, 2018"
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "16:41:03  MARCH 26, 2018"
 set_global_assignment -name LAST_QUARTUS_VERSION "17.0.0 Standard Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
-set_global_assignment -name VERILOG_FILE main.v
-set_global_assignment -name VERILOG_FILE MovementFSM.v
-set_global_assignment -name VERILOG_FILE FiringFSM.v
 set_location_assignment PIN_AJ4 -to ADC_CS_N
 set_location_assignment PIN_AK4 -to ADC_DIN
 set_location_assignment PIN_AK3 -to ADC_DOUT
@@ -696,7 +693,4 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HPS_USB_STP -entity 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
-set_global_assignment -name VERILOG_FILE ALU.v
-set_global_assignment -name VERILOG_FILE MovementDatapath.v
-set_global_assignment -name VERILOG_FILE //SRVA/Homes\$/cosbytim/Desktop/Project2/FiringDatapath.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
