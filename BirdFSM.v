@@ -14,7 +14,8 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 	wire [7:0] rand;
 	wire [1:0] move;
 	wire overflow;
-	reg inAnimation;
+	reg inAnimation = 0;
+	reg reset = 0;
 	
 	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
@@ -37,22 +38,23 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				  S_B_DRAW  = 4'b0101,
 				  S_B_SHOT = 4'b1000,
 				  S_B_ESCAPE = 4'b1001,
-				  S_RESET = 4'b1010;
+				  S_NEW = 4'b1010;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
 		if(~reset_n)
 		begin
 			STATE <= S_PREHOLD;
+			reset <= 1;
 		end
 		
 		else
 		begin
 			case(STATE)
-				S_RESET: // Resets the birds position after it leaves the screen
+				S_NEW: // Resets the birds position after it leaves the screen
 				begin
-					inAnimation <= 0;
 					STATE <= S_PREHOLD;
+					inAnimation <= 0;
 				end
 			
 				S_PREHOLD:
@@ -66,7 +68,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_SHOT:
 				begin
 					if(~flying)
-						STATE <= S_RESET;
+						STATE <= S_NEW;
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -74,7 +76,7 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_ESCAPE:
 				begin
 					if(~flying)
-						STATE <= S_RESET;
+						STATE <= S_NEW;
 					else
 						STATE <= S_PREHOLD;
 				end
@@ -90,8 +92,11 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 				S_B_CLEAR: // Wipes away previous failures
 				begin
 					if(doneDrawing)
-						if (flying) // Check to see if bird is falling/flying away
+						if (flying || reset) // Check to see if bird shouldnt move
+						begin
 							STATE <= S_B_DRAW;
+							reset <= 0;
+						end
 						else if(move == UP_RIGHT)
 							STATE <= S_B_UP_RIGHT;
 						else if (move == UP_LEFT)
@@ -121,13 +126,13 @@ module BirdFSM(clk, reset_n, STATE, doneDrawing, delayedClk, shot, outOfAmmo, fl
 					if(doneDrawing)
 						if(delayedClk && (shot || inAnimation))
 						begin
-							inAnimation <= 1;
 							STATE <= S_B_SHOT;
+							inAnimation <= 1;
 						end
 						else if(delayedClk && (outOfAmmo || inAnimation))
 						begin
-							inAnimation <= 1;
 							STATE <= S_B_ESCAPE;
+							inAnimation <= 1;
 						end
 						else if(delayedClk)
 							STATE <= S_PREHOLD;

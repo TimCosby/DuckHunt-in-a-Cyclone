@@ -17,6 +17,8 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 	reg [1:0] XDraw = 2'b00;
 	reg [1:0] YDraw = 2'b00;
 	
+	reg reset = 0;
+	
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -28,7 +30,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				  S_B_DRAW  = 4'b0101,
 				  S_B_SHOT = 4'b1000,
 				  S_B_ESCAPE = 4'b1001,
-				  S_RESET = 4'b1010;
+				  S_NEW = 4'b1010;
 				  
 	localparam HITBOX_LEN = 1'd4;
 	
@@ -36,24 +38,20 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 	begin
 		if(~reset_n)
 		begin
-			Xhold  <= Xin;
-			Yhold  <= Yin;
-			Xout   <= 80;
-			Yout   <= 60;
 			XDraw  <= 2'b00;
 			YDraw  <= 2'b00;
 			Colour <= 3'b111;
+			flying <= 0;
+			reset <= 1;
 		end
 		
 		else
 		begin
 			case(control)
-				S_RESET:
+				S_NEW:
 				begin
-					Xhold  <= Xin;
-					Yhold  <= Yin;
-					Xout   <= 80;
-					Yout   <= 60;
+					Xhold  <= 80;
+					Yhold  <= 60;
 					XDraw  <= 2'b00;
 					YDraw  <= 2'b00;
 					Colour <= 3'b111;
@@ -66,7 +64,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 			
 				S_B_UP_RIGHT: 
 				begin
-					if(Xin < 160)
+					if(Xin < 160 - (HITBOX_LEN - 1))
 						Xhold <= Xin + 1;
 					else
 						Xhold <= Xin;
@@ -92,12 +90,12 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				
 				S_B_DOWN_RIGHT:
 				begin
-					if(Xin < 160)
+					if(Xin < 160 - (HITBOX_LEN - 1))
 						Xhold <= Xin + 1;
 					else
 						Xhold <= Xin;
 				
-					if(Yin < 120)
+					if(Yin < 120 - (HITBOX_LEN - 1))
 						Yhold <= Yin + 1;
 					else
 						Yhold <= Yin;
@@ -110,7 +108,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 					else
 						Xhold <= Xin;
 						
-					if(Yin < 120)
+					if(Yin < 120 - (HITBOX_LEN - 1))
 						Yhold <= Yin + 1;
 					else
 						Yhold <= Yin;
@@ -123,7 +121,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				
 				S_B_SHOT: // Shot
 				begin
-					if(Yin > 0)
+					if(Yin > -4)
 					begin
 						Yhold <= Yin - 1;
 						flying <= 1;
@@ -136,7 +134,7 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				
 				S_B_ESCAPE: // Escape
 				begin
-				if(Yin < 124)
+				if(Yin < 120)
 					begin
 						Yhold <= Yin + 1;
 						flying <= 1;
@@ -157,8 +155,14 @@ module BirdDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, e
 				begin
 					if(YDraw == 2'b11)
 					begin
-						enable <= 1; // Tell the FSM that we are done drawing.
-						// (Don't plot <= 0 here because the last pixel still needs to be drawn first)
+						enable <= 1;
+							
+						if(reset && control == S_B_CLEAR)
+						begin
+							Xhold  <= 80;
+							Yhold  <= 60;
+							reset <= 0;
+						end
 					end
 					
 					YDraw <= YDraw + 1; // Increase y increment
