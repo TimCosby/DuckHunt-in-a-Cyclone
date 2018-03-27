@@ -1,9 +1,8 @@
-module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plot, enable);
+module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable, PorB);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
-	input [7:0] Xin;
-	input [6:0] Yin;
+	input       PorB;
 	
 	output reg [7:0] Xout = 50;
 	output reg [6:0] Yout = 50;
@@ -11,9 +10,11 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	
-	reg       reset;
-	reg [7:0] Xhold;
-	reg [6:0] Yhold;
+	reg       reset = 0;
+	reg [7:0] XPhold = 50;
+	reg [6:0] YPhold = 50;
+	reg [7:0] XBhold = 100;
+	reg [6:0] YBhold = 100;
 	reg [1:0] drawCounter = 2'b00;
 	
 	localparam S_PREHOLD = 4'b0100,
@@ -44,74 +45,119 @@ module MovementDatapath(clk, reset_n, control, Xin, Xout, Yin, Yout, Colour, plo
 			
 				S_P_LEFT: 
 				begin
-					if(Xin > 0)
-						Xhold <= Xhold - 1;
-					else
-						Xhold <= Xhold;
+					if(PorB && XBhold > 2)
+						XBhold <= XBhold - 1;
+					else if(~PorB && XPhold > 2)
+						XPhold <= XPhold - 1;
 				end
 				
 				S_P_RIGHT: 
 				begin
-					if(Xin < 158) // Max width
-						Xhold <= Xhold + 1;
-					else
-						Xhold <= Xhold;
+					if(PorB && XBhold < 158) // Max width
+						XBhold <= XBhold + 1;
+					else if(~PorB && XPhold < 158)
+						XPhold <= XPhold + 1;
 				end
 				
 				S_P_DOWN:
 				begin
-					if(Yin < 117) // Max height
-						Yhold <= Yhold + 1;
-					else
-						Yhold <= Yhold;
+					if(PorB && YBhold < 117) // Max height
+						YBhold <= YBhold + 1;
+					else if(~PorB && YPhold < 117)
+						YPhold <= YPhold + 1;
 				end
 				
 				S_P_UP: // UP
 				begin
-					if(Yin > 0)
-						Yhold <= Yhold - 1;
-					else
-						Yhold <= Yhold;
+					if(PorB && YBhold > 0)
+						YBhold <= YBhold - 1;
+					else if(~PorB && YPhold > 0)
+						YPhold <= YPhold - 1;
 				end
 				
 				S_P_DRAW: // Draw
 				begin
-					Colour <= 3'b100;
+					if(PorB)
+						Colour <= 3'b010;
+					else
+						Colour <= 3'b100;
 				end
 			endcase
 			
-			if(control == S_P_CLEAR || control == S_P_DRAW)
+			if(~PorB && (control == S_P_CLEAR || control == S_P_DRAW))
 			begin
 				enable <= 0;
 				plot <= 1;
 				if(drawCounter == 2'b00)
 				begin
-					Xout <= Xhold + 1;
-					Yout <= Yhold;
+					Xout <= XPhold + 1;
+					Yout <= YPhold;
 				end
 				
 				else if(drawCounter == 2'b01)
 				begin
-					Xout <= Xhold;
-					Yout <= Yhold + 1;
+					Xout <= XPhold;
+					Yout <= YPhold + 1;
 				end
 				
 				else if(drawCounter == 2'b10)
 				begin
-					Xout <= Xhold + 2;
-					Yout <= Yhold + 1;
+					Xout <= XPhold + 2;
+					Yout <= YPhold + 1;
 				end
 				
 				else if(drawCounter == 2'b11)
 				begin
-					Xout <= Xhold + 1;
-					Yout <= Yhold + 2;
+					Xout <= XPhold + 1;
+					Yout <= YPhold + 2;
 					enable <= 1;
 				
 					if(reset && control == S_P_CLEAR)
 					begin
-						Xhold  <= 50;
-						Yhold  <= 50;
+						XPhold  <= 50;
+						YPhold  <= 50;
+						reset <= 0;
+					end
+				end
+				
+				else
+					plot <= 0;
+					
+				drawCounter <= drawCounter + 1;
+			end
+			
+			else if(PorB && (control == S_P_CLEAR || control == S_P_DRAW))
+			begin
+				enable <= 0;
+				plot <= 1;
+				if(drawCounter == 2'b00)
+				begin
+					Xout <= XBhold + 1;
+					Yout <= YBhold;
+				end
+				
+				else if(drawCounter == 2'b01)
+				begin
+					Xout <= XBhold;
+					Yout <= YBhold + 1;
+				end
+				
+				else if(drawCounter == 2'b10)
+				begin
+					Xout <= XBhold + 2;
+					Yout <= YBhold + 1;
+				end
+				
+				else if(drawCounter == 2'b11)
+				begin
+					Xout <= XBhold + 1;
+					Yout <= YBhold + 2;
+					enable <= 1;
+				
+					if(reset && control == S_P_CLEAR)
+					begin
+						XBhold  <= 100;
+						YBhold  <= 100;
 						reset <= 0;
 					end
 				end

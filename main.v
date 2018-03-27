@@ -37,59 +37,42 @@ module main(
 	output [9:0] VGA_G;	 				//	VGA Green[9:0]
 	output [9:0] VGA_B;   				//	VGA Blue[9:0]
 
-	reg [7:0] X = 50;
-	reg [6:0] Y = 50;
-	
+	wire [7:0] X;
+	wire [6:0] Y;
 	wire resetn;
 	wire clk;
 	wire [2:0] colour;
 	wire [7:0] XPlayer;
 	wire [7:0] XBird;
-	wire [7:0] XFire;
 	wire [6:0] YPlayer;
 	wire [6:0] YBird;
-	wire [6:0] YFire;
 	wire [3:0] ControlMovement;
+	wire [3:0] ControlBird;
 	wire [2:0] ControlFiring;
 	wire [1:0] RemainingShots;	
 	wire       writeEn;
 	wire       DelaySignal;
-	wire		  fireDelay;
-	wire       GunShot;
-	reg [1:0] done = 2'b00;
-	
+	wire       isShot;
+	wire       PorB;
+	wire       gunShot;
+		
 	assign resetn  = ~SW[9];
 	assign clk     = CLOCK_50;
 	assign gunShot = SW[0];
 	
 	assign LEDR[3:0] = ControlMovement;
 	assign LEDR[5:4] = ControlFiring;
+	assign LEDR[9] = isShot;
 	
-   RateDivider rd0(
+   RateDivider Pmove(
 					.clk(clk), 
 					.reset_n(resetn), 
-					.enable(DelaySignal)
+					.enable(DelaySignal),
+					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
 	);
-	
-	RateDivider rd1(
-					.clk(DelaySignal),
-					.reset_n(reset_n),
-					.enable(fireDelay)
-	);
-	
-	always @ (posedge clk)
-	begin
-		if(done == 2'b00)
-		begin
-			X <= XPlayer;
-			Y <= YPlayer;
-		end
-		else if(done == 2'b10)
-		begin
-			X <= XFire;
-			Y <= YFire;
-		end
-	end
+		
+	assign LEDR[7] = ControlMovement == 4'b1000;
+	assign LEDR[8] = ControlMovement == 4'b1001;
 	
 	MovementFSM mfsm0( // Takes 14 ticks at most
 					.clk(clk),
@@ -97,20 +80,24 @@ module main(
 					.KEY(KEY),
 					.STATE(ControlMovement),
 					.doneDrawing(nextState),
-					.delayedClk(DelaySignal)
+					.delayedClk(DelaySignal),
+					.isShot(isShot), 
+					.outOfAmmo(~|RemainingShots), 
+					.PorB(PorB), 
+					.RandX(KEY[0]), 
+					.RandY(KEY[1])
 	);
 	
 	MovementDatapath mdp0(
 							.clk(clk), 
 							.reset_n(resetn), 
 							.control(ControlMovement), 
-							.Xin(XPlayer), 
-							.Xout(XPlayer), 
-							.Yin(YPlayer), 
-							.Yout(YPlayer), 
+							.Xout(X), 
+							.Yout(Y), 
 							.Colour(colour), 
 							.plot(writeEn),
-							.enable(nextState)
+							.enable(nextState),
+							.PorB(PorB)
 	);
 	
 	FiringFSM ffsm0(
@@ -140,8 +127,8 @@ module main(
 			.resetn(resetn),
 			.clock(clk),
 			.colour(colour),
-			.x(XPlayer),
-			.y(YPlayer),
+			.x(X),
+			.y(Y),
 			.plot(writeEn),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),

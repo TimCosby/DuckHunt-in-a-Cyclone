@@ -1,27 +1,35 @@
-module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
+module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, outOfAmmo, PorB, RandX, RandY);
 	input clk;
 	input reset_n;
 	input [3:0] KEY;
 	input doneDrawing;
 	input delayedClk;
+	input isShot;
+	input outOfAmmo;
+	input RandX;
+	input RandY;
 	
-	output reg [3:0] STATE = S_PREHOLD;
+	output reg [3:0] STATE;
+	output reg       PorB;
 	
-	wire RIGHT = ~KEY[0];
-	wire DOWN  = ~KEY[1];
-	wire UP    = ~KEY[2];
-	wire LEFT  = ~KEY[3];
+	reg RIGHT;
+	reg DOWN;
+	reg UP;
+	reg LEFT;
 	
-	reg reset = 0;
+	reg reset;
 	
-	localparam S_PREHOLD = 4'b0100,
-				  S_HOLD    = 4'b0000,
-				  S_P_CLEAR = 4'b0001,
-				  S_P_LEFT  = 4'b0011,
-				  S_P_RIGHT = 4'b0010,
-				  S_P_DOWN  = 4'b0110,
-				  S_P_UP    = 4'b0111,
-				  S_P_DRAW  = 4'b0101;
+	localparam S_PREHOLD   = 4'b0100,
+				  S_HOLD      = 4'b0000,
+				  S_P_CLEAR   = 4'b0001,
+				  S_P_LEFT    = 4'b0011,
+				  S_P_RIGHT   = 4'b0010,
+				  S_P_DOWN    = 4'b0110,
+				  S_P_UP      = 4'b0111,
+				  S_P_DRAW    = 4'b0101,
+				  S_P_SHOT    = 4'b1000,
+				  S_P_ESCAPED = 4'b1001,
+				  S_P_IS_SHOT = 4'b1010;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -29,6 +37,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 		begin
 			STATE <= S_P_CLEAR;
 			reset <= 1;
+			PorB  <= 0;
 		end
 		
 		else
@@ -45,7 +54,13 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 				S_HOLD:
 				begin
 					if(delayedClk) // Until on tick
+					begin
+						RIGHT <= RandX;
+						DOWN  <= RandY;
+						UP    <= ~RandY;
+						LEFT  <= ~RandX;
 						STATE <= S_P_CLEAR;
+					end
 					else
 						STATE <= S_HOLD;
 				end
@@ -56,10 +71,10 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 					begin
 						if(reset)
 						begin
-							STATE <= S_P_DRAW;
 							reset <= 0;
+							STATE <= S_P_DRAW;
 						end
-						if(RIGHT)
+						else if(RIGHT)
 							STATE <= S_P_RIGHT;
 						else if(LEFT)
 							STATE <= S_P_LEFT;
@@ -104,13 +119,36 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk);
 				begin
 					if(doneDrawing)
 					begin
-						if(delayedClk)
-							STATE <= S_PREHOLD;
+						PorB <= ~PorB;
+						if(PorB)
+						begin
+							RIGHT <= ~KEY[0];
+							DOWN  <= ~KEY[1];
+							UP    <= ~KEY[2];
+							LEFT  <= ~KEY[3];
+							STATE <= S_P_CLEAR;
+						end
+						
 						else
-							STATE <= S_HOLD;
+							STATE <= S_P_IS_SHOT;
 					end
 					else
 						STATE <= S_P_DRAW;
+				end
+				
+				S_P_IS_SHOT:
+				begin
+					if(delayedClk)
+						STATE <= S_PREHOLD;
+					else
+						STATE <= S_HOLD;
+				end
+				
+				default:
+				begin
+					STATE <= S_PREHOLD;
+					reset <= 0;
+					PorB  <= 0;
 				end
 			endcase
 		end
