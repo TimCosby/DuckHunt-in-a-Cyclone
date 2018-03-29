@@ -1,11 +1,13 @@
-module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlayer, YPlayer, isShot, escape);
+module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlayer, YPlayer, isShot, escape, fly, fall);
 	input       clk;
 	input       reset_n;
 	input [2:0] control;
 	input [7:0] XPlayer;
 	input [7:0] XBird;
 	input [6:0] YPlayer;
-	input [6:0] YBird;
+	input [7:0] YBird;
+	input 		fly;
+	input 		fall;
 	
 	output reg isShot = 0;
 	output reg escape = 0;
@@ -36,7 +38,8 @@ module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlay
 						RemainingShots <= RemainingShots - 1;
 						
 						if(((XPlayer >= XBird && XPlayer <= XBird + 3) || (XPlayer + 2 >= XBird && XPlayer + 2 <= XBird + 3)) &&
-						   ((YPlayer >= YBird && YPlayer <= YBird + 3) || (YPlayer + 2 >= YBird && YPlayer + 2 <= YBird + 3)))
+						   ((YPlayer >= YBird && YPlayer <= YBird + 3) || (YPlayer + 2 >= YBird && YPlayer + 2 <= YBird + 3)) && 
+							~fly && ~fall)
 							isShot <= 1;
 							// If Player's hitbox is 3x3 and Bird's 4x4
 					end

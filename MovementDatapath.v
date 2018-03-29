@@ -18,7 +18,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	output reg [7:0] XPhold = 50;
 	output reg [6:0] YPhold = 50;
 	output reg [7:0] XBhold = 100;
-	output reg [6:0] YBhold = 100;
+	output reg signed [7:0] YBhold = 100;
 	reg [1:0] drawCounter = 2'b00;
 	reg [1:0] XBDraw = 2'b00;
 	reg [1:0] YBDraw = 2'b00;
@@ -81,6 +81,8 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 						leave <= 0;
 						YBhold <= YBhold + 1;
 					end
+					else if(PorB && fall)
+						YBhold <= YBhold + 1;
 					else if(~PorB && YPhold < 117)
 						YPhold <= YPhold + 1;
 				end
@@ -92,20 +94,22 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 						leave <= 0;
 						YBhold <= YBhold - 1;
 					end
+					else if(PorB && fly)
+						YBhold <= YBhold - 1;
 					else if(~PorB && YPhold > 0)
 						YPhold <= YPhold - 1;
 				end
 				
 				S_P_DRAW: // Draw
 				begin
-					if(PorB && fall && (YBhold == 0))
+					if(PorB && fly && (YBhold + 4 == 0))
 					begin
 						leave <= 1;
 						XBhold <= 80;
 						YBhold <= 60;
 						Colour <= 3'b111;
 					end
-					else if (PorB && fly && (YBhold == 117))
+					else if (PorB && fall && (YBhold > 121))
 					begin
 						leave <= 1;
 						XBhold <= 80;

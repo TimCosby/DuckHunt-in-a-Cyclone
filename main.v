@@ -64,14 +64,13 @@ module main(
 	assign gunShot = SW[0];
 	
 	assign LEDR[3:0] = ControlMovement;
-	assign LEDR[5:4] = ControlFiring;
+	//assign LEDR[5:4] = ControlFiring;
 	assign LEDR[9] = isShot;
 	
    RateDivider Pmove(
 					.clk(clk), 
 					.reset_n(resetn), 
-					.enable(DelaySignal),
-					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
+					.enable(DelaySignal)
 	);
 		
 	assign LEDR[7] = ControlMovement == 4'b1000;
@@ -111,7 +110,8 @@ module main(
 					.escape(escape),
 					.fly(fly), 
 					.fall(fall), 
-					.leave(leave)
+					.leave(leave),
+					.rng(LEDR[5:4])
 	);
 	
 	MovementDatapath mdp0(
@@ -151,7 +151,9 @@ module main(
 						.XPlayer(XPlayer),
 						.YPlayer(YPlayer),
 						.isShot(isShot),
-						.escape(escape)
+						.escape(escape),
+						.fly(fly),
+						.fall(fall)
 	);
 	
 	seg7display s0(

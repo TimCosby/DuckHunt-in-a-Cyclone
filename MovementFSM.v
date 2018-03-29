@@ -1,4 +1,4 @@
-module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, outOfAmmo, PorB, RandX, RandY, escape, fly, fall, leave);
+module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, outOfAmmo, PorB, RandX, RandY, escape, fly, fall, leave, rng);
 	input clk;
 	input reset_n;
 	input [3:0] KEY;
@@ -16,6 +16,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 
 	output reg [3:0] STATE;
 	output reg       PorB;
+	output [1:0] rng;
 	
 	wire [27:0] q;
 	wire bclk;
@@ -24,9 +25,11 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 	wire overflow;
 	reg inAnimation = 0;
 	
+	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
+	assign rng = move;
 	
-	RateDivider RTD0(clk, reset_n, bclk, 49999999);
+	RateDividerB RTD0(49999999, q, clk, reset_n, 0, 1);
 	lfsr_updown L0(bclk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
 	
 	reg RIGHT;
@@ -180,9 +183,9 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 						fall <= 0;
 					end
 					else if(isShot)
-						fly <= 1;
-					else if(escape)
 						fall <= 1;
+					else if(escape)
+						fly <= 1;
 					if(delayedClk)
 						STATE <= S_PREHOLD;
 					else
