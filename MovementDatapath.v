@@ -20,8 +20,8 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	output reg [7:0] XBhold = 100;
 	output reg signed [7:0] YBhold = 100;
 	reg [1:0] drawCounter = 2'b00;
-	reg [1:0] XBDraw = 2'b00;
-	reg [1:0] YBDraw = 2'b00;
+	reg [4:0] XBDraw = 5'b00000;
+	reg [3:0] YBDraw = 4'b0000;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -31,6 +31,9 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				  S_P_DOWN  = 4'b0110,
 				  S_P_UP    = 4'b0111,
 				  S_P_DRAW  = 4'b0101;
+			
+	localparam HITBOX_X = 4'b1110,
+				  HITBOX_Y = 4'b1001;
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -54,7 +57,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			
 				S_P_LEFT: 
 				begin
-					if(PorB && XBhold > 2)
+					if(PorB && XBhold > 0)
 					begin
 						leave <= 0;
 						XBhold <= XBhold - 1;
@@ -65,7 +68,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				S_P_RIGHT: 
 				begin
-					if(PorB && XBhold < 158) // Max width
+					if(PorB && XBhold < 160 - (HITBOX_X - 1)) // Max width
 					begin
 						leave <= 0;
 						XBhold <= XBhold + 1;
@@ -76,7 +79,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				S_P_DOWN:
 				begin
-					if(PorB && YBhold < 117) // Max height
+					if(PorB && YBhold < 120 - (HITBOX_Y - 1)) // Max height
 					begin
 						leave <= 0;
 						YBhold <= YBhold + 1;
@@ -102,14 +105,14 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				S_P_DRAW: // Draw
 				begin
-					if(PorB && fly && (YBhold + 4 == 0))
+					if(PorB && fly && (YBhold + HITBOX_Y == 0))
 					begin
 						leave <= 1;
 						XBhold <= 80;
 						YBhold <= 60;
 						Colour <= 3'b111;
 					end
-					else if (PorB && fall && (YBhold > 121))
+					else if (PorB && fall && (YBhold > 120))
 					begin
 						leave <= 1;
 						XBhold <= 80;
@@ -173,9 +176,9 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				Xout <= XBhold + XBDraw; 
 				Yout <= YBhold + YBDraw;
 				
-				if(XBDraw == 2'b11)
+				if(XBDraw == HITBOX_X)
 				begin
-					if(YBDraw == 2'b11)
+					if(YBDraw == HITBOX_Y)
 					begin
 						enable <= 1;
 							
@@ -191,6 +194,28 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				end
 				
 				XBDraw <= XBDraw + 1;
+				
+				if (control == S_P_DRAW) // Pick C
+				begin
+					if ((YBDraw == 1 || YBDraw == 2) && (XBDraw == 0 || XBDraw == 1 || XBDraw == 2))
+						Colour <= 3'b110;
+					else if ((YBDraw == 6) && (XBDraw == 12 || XBDraw == 11))
+						Colour <= 3'b110;
+					else if (YBDraw <= 3  && (XBDraw > 2 && XBDraw <= 5))
+						Colour <= 3'b111;
+					else if ((YBDraw > 2 && YBDraw <= 6) && (XBDraw > 6 && XBDraw <= 12))
+						Colour <= 3'b111;
+					else if ((YBDraw > 2 && YBDraw <= 5) && (XBDraw > 3 && XBDraw <= 13))
+						Colour <= 3'b111;
+					else if (YBDraw == 6 && (XBDraw == 5 || XBDraw == 6))
+						Colour <= 3'b111;
+					else if (YBDraw == 7 && (XBDraw > 6 && XBDraw <= 9))
+						Colour <= 3'b111;
+					else if (YBDraw == 8 && (XBDraw > 6 && XBDraw <= 8))
+						Colour <= 3'b111;
+					else
+						Colour <= 3'b000;
+				end
 				
 			end
 			else
