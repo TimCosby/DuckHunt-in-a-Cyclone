@@ -70,7 +70,8 @@ module main(
    RateDivider Pmove(
 					.clk(clk), 
 					.reset_n(resetn), 
-					.enable(DelaySignal)
+					.enable(DelaySignal),
+					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
 	);
 		
 	assign LEDR[7] = ControlMovement == 4'b1000;

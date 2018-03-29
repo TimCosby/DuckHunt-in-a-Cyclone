@@ -24,10 +24,9 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 	wire overflow;
 	reg inAnimation = 0;
 	
-	assign bclk = (q == 0) ? 1 : 0;
 	assign move = rand[1:0];
 	
-	RateDividerB RTD0(49999999, q, clk, reset_n, 0, 1);
+	RateDivider RTD0(clk, reset_n, bclk, 49999999);
 	lfsr_updown L0(bclk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
 	
 	reg RIGHT;
