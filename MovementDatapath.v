@@ -1,8 +1,9 @@
-module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable, PorB);
+module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable, PorB, isShot, XBhold, YBhold, XPhold, YPhold);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
 	input       PorB;
+	input 	isShot;
 	
 	output reg [7:0] Xout = 50;
 	output reg [6:0] Yout = 50;
@@ -11,11 +12,13 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	output reg       enable = 0;
 	
 	reg       reset = 0;
-	reg [7:0] XPhold = 50;
-	reg [6:0] YPhold = 50;
-	reg [7:0] XBhold = 100;
-	reg [6:0] YBhold = 100;
+	output reg [7:0] XPhold = 50;
+	output reg [6:0] YPhold = 50;
+	output reg [7:0] XBhold = 100;
+	output reg [6:0] YBhold = 100;
 	reg [1:0] drawCounter = 2'b00;
+	reg [1:0] XBDraw = 2'b00;
+	reg [1:0] YBDraw = 2'b00;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -33,6 +36,8 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			reset <= 1;
 			enable <= 0;
 			drawCounter <= 2'b00;
+			XBDraw  <= 2'b00;
+			YBDraw  <= 2'b00;
 		end
 		
 		else
@@ -77,8 +82,14 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				S_P_DRAW: // Draw
 				begin
-					if(PorB)
-						Colour <= 3'b010;
+					if(PorB & isShot)
+					begin
+						XBhold <= 100;
+						YBhold <= 100;
+						Colour <= 3'b111;
+					end
+					else if (PorB)
+						Colour <= 3'b111;
 					else
 						Colour <= 3'b100;
 				end
@@ -130,44 +141,30 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			begin
 				enable <= 0;
 				plot <= 1;
-				if(drawCounter == 2'b00)
-				begin
-					Xout <= XBhold + 1;
-					Yout <= YBhold;
-				end
 				
-				else if(drawCounter == 2'b01)
-				begin
-					Xout <= XBhold;
-					Yout <= YBhold + 1;
-				end
+				Xout <= XBhold + XBDraw; 
+				Yout <= YBhold + YBDraw;
 				
-				else if(drawCounter == 2'b10)
+				if(XBDraw == 2'b11)
 				begin
-					Xout <= XBhold + 2;
-					Yout <= YBhold + 1;
-				end
-				
-				else if(drawCounter == 2'b11)
-				begin
-					Xout <= XBhold + 1;
-					Yout <= YBhold + 2;
-					enable <= 1;
-				
-					if(reset && control == S_P_CLEAR)
+					if(YBDraw == 2'b11)
 					begin
-						XBhold  <= 100;
-						YBhold  <= 100;
-						reset <= 0;
+						enable <= 1;
+							
+						if(reset && control == S_P_CLEAR)
+						begin
+							XBhold  <= 80;
+							YBhold  <= 60;
+							reset <= 0;
+						end
 					end
+					
+					YBDraw <= YBDraw + 1;
 				end
 				
-				else
-					plot <= 0;
-					
-				drawCounter <= drawCounter + 1;
+				XBDraw <= XBDraw + 1;
+				
 			end
-			
 			else
 			begin
 				plot <= 0;

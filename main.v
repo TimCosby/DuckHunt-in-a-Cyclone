@@ -9,6 +9,7 @@ module main(
       SW,
 		LEDR,
 		HEX0,
+		HEX2,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -25,6 +26,7 @@ module main(
 	input  [3:0] KEY;
 	output [9:0] LEDR;
 	output [6:0] HEX0;
+	output [6:0] HEX2;
 	
 	// Declare your inputs and outputs here
 	// Do not change the following outputs
@@ -67,12 +69,30 @@ module main(
    RateDivider Pmove(
 					.clk(clk), 
 					.reset_n(resetn), 
-					.enable(DelaySignal),
-					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
+					.enable(DelaySignal)
 	);
 		
 	assign LEDR[7] = ControlMovement == 4'b1000;
 	assign LEDR[8] = ControlMovement == 4'b1001;
+	
+	wire [3:0] score;
+	reg [3:0] writeScore = 0;
+	ram32x4 sc(.address(5'b00001),
+					  .clock(clk),
+					  .data(writeScore),
+					  .wren(gunShot || ~resetn),
+					  .q(score)
+						);
+						
+	always @ (posedge clk, negedge resetn)
+	begin
+		if (~resetn)
+			writeScore <= 0;
+		else if (isShot)
+			writeScore <= writeScore + 1;
+		else if (RemainingShots == 0)
+			writeScore <= writeScore - 1;
+	end
 	
 	MovementFSM mfsm0( // Takes 14 ticks at most
 					.clk(clk),
@@ -97,7 +117,12 @@ module main(
 							.Colour(colour), 
 							.plot(writeEn),
 							.enable(nextState),
-							.PorB(PorB)
+							.PorB(PorB),
+							.isShot(isShot),
+							.XBhold(XBird),
+							.YBhold(YBird),
+							.XPhold(XPlayer),
+							.YPhold(YPlayer)
 	);
 	
 	FiringFSM ffsm0(
@@ -111,12 +136,22 @@ module main(
 						.clk(DelaySignal), 
 						.reset_n(resetn),
 						.control(ControlFiring), 
-						.RemainingShots(RemainingShots)
+						.RemainingShots(RemainingShots),
+						.XBird(XBird),
+						.YBird(YBird),
+						.XPlayer(XPlayer),
+						.YPlayer(YPlayer),
+						.isShot(isShot)
 	);
 	
-	seg7display(
+	seg7display s0(
 				.HEX(HEX0),
 				.SW({2'b00, RemainingShots})
+	);
+	
+	seg7display s1(
+				.HEX(HEX2),
+				.SW(score)
 	);
 	
 	

@@ -12,6 +12,19 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 	output reg [3:0] STATE;
 	output reg       PorB;
 	
+	wire [27:0] q;
+	wire bclk;
+	wire [7:0] rand;
+	wire [1:0] move;
+	wire overflow;
+	reg inAnimation = 0;
+	
+	assign bclk = (q == 0) ? 1 : 0;
+	assign move = rand[1:0];
+	
+	RateDividerB RTD0(49999999, q, clk, reset_n, 0, 1);
+	lfsr_updown L0(bclk, ~reset_n, ~doneDrawing, 1'b1, rand, overflow);
+	
 	reg RIGHT;
 	reg DOWN;
 	reg UP;
@@ -55,10 +68,10 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 				begin
 					if(delayedClk) // Until on tick
 					begin
-						RIGHT <= RandX;
-						DOWN  <= RandY;
-						UP    <= ~RandY;
-						LEFT  <= ~RandX;
+						RIGHT <= move[0];
+						DOWN  <= move[1];
+						UP    <= ~move[1];
+						LEFT  <= ~move[0];
 						STATE <= S_P_CLEAR;
 					end
 					else
