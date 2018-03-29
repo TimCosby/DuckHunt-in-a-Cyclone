@@ -57,6 +57,7 @@ module main(
 	wire       isShot;
 	wire       PorB;
 	wire       gunShot;
+	wire 			escape;
 		
 	assign resetn  = ~SW[9];
 	assign clk     = CLOCK_50;
@@ -105,7 +106,11 @@ module main(
 					.outOfAmmo(~|RemainingShots), 
 					.PorB(PorB), 
 					.RandX(KEY[0]), 
-					.RandY(KEY[1])
+					.RandY(KEY[1]),
+					.escape(escape),
+					.fly(fly), 
+					.fall(fall), 
+					.leave(leave)
 	);
 	
 	MovementDatapath mdp0(
@@ -122,7 +127,10 @@ module main(
 							.XBhold(XBird),
 							.YBhold(YBird),
 							.XPhold(XPlayer),
-							.YPhold(YPlayer)
+							.YPhold(YPlayer),
+							.fly(fly), 
+							.fall(fall), 
+							.leave(leave)
 	);
 	
 	FiringFSM ffsm0(
@@ -141,7 +149,8 @@ module main(
 						.YBird(YBird),
 						.XPlayer(XPlayer),
 						.YPlayer(YPlayer),
-						.isShot(isShot)
+						.isShot(isShot),
+						.escape(escape)
 	);
 	
 	seg7display s0(

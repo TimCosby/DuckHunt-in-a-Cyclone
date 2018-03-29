@@ -1,15 +1,18 @@
-module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable, PorB, isShot, XBhold, YBhold, XPhold, YPhold);
+module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable, PorB, isShot, XBhold, YBhold, XPhold, YPhold, fly, fall, leave);
 	input       clk;
 	input       reset_n;
 	input [3:0] control;
 	input       PorB;
-	input 	isShot;
+	input 		isShot;
+	input 		fly;
+	input			fall;
 	
 	output reg [7:0] Xout = 50;
 	output reg [6:0] Yout = 50;
 	output reg [2:0] Colour = 3'b100;
 	output reg       plot   = 0;
 	output reg       enable = 0;
+	output reg		  leave = 0;
 	
 	reg       reset = 0;
 	output reg [7:0] XPhold = 50;
@@ -38,6 +41,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			drawCounter <= 2'b00;
 			XBDraw  <= 2'b00;
 			YBDraw  <= 2'b00;
+			leave <= 0;
 		end
 		
 		else
@@ -51,7 +55,10 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				S_P_LEFT: 
 				begin
 					if(PorB && XBhold > 2)
+					begin
+						leave <= 0;
 						XBhold <= XBhold - 1;
+					end
 					else if(~PorB && XPhold > 2)
 						XPhold <= XPhold - 1;
 				end
@@ -59,7 +66,10 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				S_P_RIGHT: 
 				begin
 					if(PorB && XBhold < 158) // Max width
+					begin
+						leave <= 0;
 						XBhold <= XBhold + 1;
+					end
 					else if(~PorB && XPhold < 158)
 						XPhold <= XPhold + 1;
 				end
@@ -67,7 +77,10 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				S_P_DOWN:
 				begin
 					if(PorB && YBhold < 117) // Max height
+					begin
+						leave <= 0;
 						YBhold <= YBhold + 1;
+					end
 					else if(~PorB && YPhold < 117)
 						YPhold <= YPhold + 1;
 				end
@@ -75,17 +88,28 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				S_P_UP: // UP
 				begin
 					if(PorB && YBhold > 0)
+					begin
+						leave <= 0;
 						YBhold <= YBhold - 1;
+					end
 					else if(~PorB && YPhold > 0)
 						YPhold <= YPhold - 1;
 				end
 				
 				S_P_DRAW: // Draw
 				begin
-					if(PorB & isShot)
+					if(PorB && fall && (YBhold == 0))
 					begin
-						XBhold <= 100;
-						YBhold <= 100;
+						leave <= 1;
+						XBhold <= 80;
+						YBhold <= 60;
+						Colour <= 3'b111;
+					end
+					else if (PorB && fly && (YBhold == 117))
+					begin
+						leave <= 1;
+						XBhold <= 80;
+						YBhold <= 60;
 						Colour <= 3'b111;
 					end
 					else if (PorB)

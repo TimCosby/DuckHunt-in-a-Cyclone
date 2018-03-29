@@ -1,14 +1,19 @@
-module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, outOfAmmo, PorB, RandX, RandY);
+module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, outOfAmmo, PorB, RandX, RandY, escape, fly, fall, leave);
 	input clk;
 	input reset_n;
 	input [3:0] KEY;
 	input doneDrawing;
 	input delayedClk;
 	input isShot;
+	input escape;
 	input outOfAmmo;
 	input RandX;
 	input RandY;
 	
+	input leave;
+	output reg fly;
+	output reg fall;
+
 	output reg [3:0] STATE;
 	output reg       PorB;
 	
@@ -68,11 +73,30 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 				begin
 					if(delayedClk) // Until on tick
 					begin
-						RIGHT <= move[0];
-						DOWN  <= move[1];
-						UP    <= ~move[1];
-						LEFT  <= ~move[0];
-						STATE <= S_P_CLEAR;
+						if(fly)
+						begin
+							RIGHT <= 0;
+							DOWN  <= 0;
+							UP    <= 1;
+							LEFT  <= 0;
+							STATE <= S_P_CLEAR;
+						end
+						else if(fall)
+						begin
+							RIGHT <= 0;
+							DOWN  <= 1;
+							UP    <= 0;
+							LEFT  <= 0;
+							STATE <= S_P_CLEAR;
+						end
+						else
+						begin
+							RIGHT <= move[0];
+							DOWN  <= move[1];
+							UP    <= ~move[1];
+							LEFT  <= ~move[0];
+							STATE <= S_P_CLEAR;
+						end
 					end
 					else
 						STATE <= S_HOLD;
@@ -151,6 +175,15 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 				
 				S_P_IS_SHOT:
 				begin
+					if(leave)
+					begin
+						fly <= 0;
+						fall <= 0;
+					end
+					else if(isShot)
+						fly <= 1;
+					else if(escape)
+						fall <= 1;
 					if(delayedClk)
 						STATE <= S_PREHOLD;
 					else
