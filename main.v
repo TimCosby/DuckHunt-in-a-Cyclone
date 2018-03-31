@@ -9,10 +9,12 @@ module main(
       SW,
 		LEDR,
 		HEX0,
+		HEX1,
 		HEX2,
 		HEX3,
 		HEX4,
 		HEX5,
+		TD_DATA,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -27,9 +29,11 @@ module main(
 	input	    	 CLOCK_50;				//	50 MHz
 	input  [9:0] SW;
 	input  [3:0] KEY;
-
+	output  [1:0] TD_DATA;
+	
 	output [9:0] LEDR;
 	output [6:0] HEX0;
+	output [6:0] HEX1;
 	output [6:0] HEX2;
 	output [6:0] HEX3;
 	output [6:0] HEX4;
@@ -43,11 +47,12 @@ module main(
 	output [9:0] VGA_G;	 				//	VGA Green[9:0]
 	output [9:0] VGA_B;   				//	VGA Blue[9:0]
 
-	reg  [9:0] birds       = 10'b1111111111; 
-	reg  [3:0] birdsAlive  = 0;
-	reg  [3:0] birdsDead   = 0;
-	reg  [13:0] score      = 0;
-	reg gameOver = 0;
+	reg [9:0]  birds      = 10'b1111111111; 
+	reg [3:0]  birdsAlive = 0;
+	reg [3:0]  birdsDead  = 0;
+	reg [13:0] score      = 0;
+	reg [3:0]  round      = 0;
+	reg        gameOver   = 0;
 	
 	wire [7:0] X;
 	wire [6:0] Y;
@@ -71,6 +76,7 @@ module main(
 	wire [3:0] scoreTens;
 	wire [3:0] scoreHundreds;
 	wire [3:0] scoreThousands;
+	wire [1:0] rand;
 	
 	assign resetn    = ~SW[9];
 	assign clk       = CLOCK_50;
@@ -80,7 +86,8 @@ module main(
 	assign scoreHundreds = (score / 100) % 10;
 	assign scoreThousands = (score / 1000) % 10;
 	
-	assign LEDR = birds;
+	assign LEDR[7:0] = birds[7:0];
+	assign LEDR[9:8] = rand;
 	
 	always @ (negedge resetn, posedge leave)
 	begin
@@ -89,7 +96,9 @@ module main(
 			birds      <= 10'b1111111111;
 			birdsAlive <= 0;
 			birdsDead  <= 0;
+			score <= 0;
 			gameOver <= 0;
+			round <= 0;
 		end
 		else if(leave)
 		begin
@@ -113,6 +122,7 @@ module main(
 					birds      <= 10'b1111111111;
 					birdsAlive <= 0;
 					birdsDead  <= 0;
+					round <= round + 1;
 				end
 			
 				else
@@ -123,12 +133,25 @@ module main(
 	
 	
    RateDivider Pmove(
+	wire oneSec;
 					.clk(clk && ~gameOver), 
 					.reset_n(resetn), 
-					.enable(DelaySignal)
+					.enable(DelaySignal),
+					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
 	);
 	
-	MovementFSM mfsm0( // Takes 14 ticks at most
+	RateDivider Rnd(
+					.clk(clk),
+					.reset_n(resetn),
+					.enable(oneSec),
+					.delay(49999999)
+	);
+	
+	lfsr_updown L0(oneSec, ~reset_n, DelaySignal, 1'b1, rand, overflow);
+	
+	assign TD_DATA[1:0] = rand;
+	
+	MovementFSM mfsm0(
 					.clk(clk),
 					.reset_n(resetn),
 					.KEY(KEY),
@@ -138,13 +161,13 @@ module main(
 					.isShot(isShot), 
 					.outOfAmmo(~|RemainingShots), 
 					.PorB(PorB), 
-					.RandX(KEY[0]), 
-					.RandY(KEY[1]),
+					.RandX(rand[0]), 
+					.RandY(rand[1]),
 					.escape(escape),
 					.fly(fly), 
 					.fall(fall), 
 					.leave(leave),
-					.rng(rng)
+					.round(round)
 	);
 	
 	MovementDatapath mdp0(
@@ -192,8 +215,13 @@ module main(
 	);
 	
 	seg7display s0(
-				.HEX(HEX0),
-				.SW({2'b00, RemainingShots})
+			.HEX(HEX0),
+			.SW({2'b00, RemainingShots})
+	);
+	
+	seg7display s1(
+			.HEX(HEX1),
+			.SW(round + 1)
 	);
 	
 	seg7display s2(

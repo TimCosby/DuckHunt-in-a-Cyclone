@@ -1,5 +1,5 @@
 // Code from http://www.asic-world.com/examples/verilog/lfsr.html
-`define WIDTH 8 
+`define WIDTH 2
 module lfsr_updown (
 clk       ,   // Clock input
 reset     ,   // Reset input
@@ -23,14 +23,19 @@ overflow      // Overflow output
                                (count == {1'b1, {`WIDTH-1{1'b0}}}) ;
 
  always @(posedge clk)
- if (reset) 
-    count <= {`WIDTH{1'b0}};
- else if (enable) begin
-    if (up_down) begin
-      count <= {~(^(count & `WIDTH'b01100011)),count[`WIDTH-1:1]};
-    end else begin
-      count <= {count[`WIDTH-2:0],~(^(count &  `WIDTH'b10110001))};
-    end
- end
+	 if (reset) 
+		 count <= {`WIDTH{1'b0}};
 
+	 else if (enable) 
+	 begin
+		 if (up_down) 
+		 begin
+			count <= {~(^(count & `WIDTH'b00100011)),count[`WIDTH-1:1]};
+		end 
+		
+		else 
+		begin
+			count <= {count[`WIDTH-2:0],~(^(count &  `WIDTH'b10110101))};
+		 end
+	 end
 endmodule

@@ -1,11 +1,12 @@
-module RateDivider(clk, reset_n, enable);
+module RateDivider(clk, reset_n, enable, delay);
 	input clk;
 	input reset_n;
-	output reg enable;
+	input [26:0] delay;
 
-	wire[26:0] delay = 1666666; //833332; // 1/60 Hz //49999999; // 1 Hz
 	
-	reg[26:0] q = 0;
+	output reg enable;
+		
+	reg [26:0] q = 0;
 	
 	always @(posedge clk, negedge reset_n)
 	begin
