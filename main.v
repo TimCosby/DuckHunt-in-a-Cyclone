@@ -11,6 +11,8 @@ module main(
 		HEX0,
 		HEX2,
 		HEX3,
+		HEX4,
+		HEX5,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -25,13 +27,13 @@ module main(
 	input	    	 CLOCK_50;				//	50 MHz
 	input  [9:0] SW;
 	input  [3:0] KEY;
+
 	output [9:0] LEDR;
 	output [6:0] HEX0;
 	output [6:0] HEX2;
 	output [6:0] HEX3;
-	
-	// Declare your inputs and outputs here
-	// Do not change the following outputs
+	output [6:0] HEX4;
+	output [6:0] HEX5;
 	output		 VGA_CLK;   				//	VGA Clock
 	output		 VGA_HS;					//	VGA H_SYNC
 	output		 VGA_VS;					//	VGA V_SYNC
@@ -41,6 +43,12 @@ module main(
 	output [9:0] VGA_G;	 				//	VGA Green[9:0]
 	output [9:0] VGA_B;   				//	VGA Blue[9:0]
 
+	reg  [9:0] birds       = 10'b1111111111; 
+	reg  [3:0] birdsAlive  = 0;
+	reg  [3:0] birdsDead   = 0;
+	reg  [13:0] score      = 0;
+	reg gameOver = 0;
+	
 	wire [7:0] X;
 	wire [6:0] Y;
 	wire resetn;
@@ -60,46 +68,65 @@ module main(
 	wire       PorB;
 	wire       gunShot;
 	wire 		  escape;
-	wire  [3:0] scoreOnes;
-	wire  [3:0] scoreTens;
-		
-	assign resetn  = ~SW[9];
-	assign clk     = CLOCK_50;
-	assign gunShot = SW[0];
+	wire [3:0] scoreTens;
+	wire [3:0] scoreHundreds;
+	wire [3:0] scoreThousands;
 	
-	assign LEDR[3:0] = ControlMovement;
-	//assign LEDR[5:4] = ControlFiring;
+	assign resetn    = ~SW[9];
+	assign clk       = CLOCK_50;
+	assign gunShot   = SW[0];
+	assign scoreOnes = score % 10;
+	assign scoreTens = (score / 10) % 10;
+	assign scoreHundreds = (score / 100) % 10;
+	assign scoreThousands = (score / 1000) % 10;
+	
+	assign LEDR = birds;
+	
+	always @ (negedge resetn, posedge leave)
+	begin
+		if(~resetn)
+		begin
+			birds      <= 10'b1111111111;
+			birdsAlive <= 0;
+			birdsDead  <= 0;
+			gameOver <= 0;
+		end
+		else if(leave)
+		begin
+			if(escape)
+			begin
+				birdsDead <= birdsDead + 1;
+				if(score > 0)
+					score <= score - 10;
+			end
+			else if(isShot)
+			begin
+				birds[birdsAlive + birdsDead] = 0;
+				birdsAlive <= birdsAlive + 1;
+				score <= score + 50;
+			end
+				
+			if(birdsAlive + birdsDead == 9)
+			begin
+				if(birdsAlive >= birdsDead)
+				begin
+					birds      <= 10'b1111111111;
+					birdsAlive <= 0;
+					birdsDead  <= 0;
+				end
+			
+				else
+					gameOver <= 1;
+			end
+		end	
+	end
+	
 	
    RateDivider Pmove(
-					.clk(clk), 
+					.clk(clk && ~gameOver), 
 					.reset_n(resetn), 
 					.enable(DelaySignal)
 	);
-		
-	
-	reg [3:0] score = 0;
-	assign LEDR[9:6] = score;
-	
-	assign LEDR[5] = leave;
-	assign LEDR[4] = fall;
-	
-	always @ (negedge resetn, posedge gunShot)
-	begin
-		if(~resetn)
-			score <= 0;
-		else
-		begin
-			if(isShot)
-				score <= score + 1;
-			else if(escape && score > 0)
-				score <= score - 1;
-			else
-				score <= score;
-		end
-	end
-	
-	assign scoreOnes = score % 10;
-	assign scoreTens = score / 10;	
 	
 	MovementFSM mfsm0( // Takes 14 ticks at most
 					.clk(clk),
@@ -171,14 +198,23 @@ module main(
 	
 	seg7display s2(
 				.HEX(HEX2),
-				.SW(scoreOnes)
+				.SW(0)
 	);
 	
 	seg7display s3(
 				.HEX(HEX3),
-				.SW(scoreTenss)
+				.SW(scoreTens)
 	);
 	
+	seg7display s4(
+				.HEX(HEX4),
+				.SW(scoreHundreds)
+	);
+
+	seg7display s5(
+				.HEX(HEX5),
+				.SW(scoreThousands)
+	);
 	
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
