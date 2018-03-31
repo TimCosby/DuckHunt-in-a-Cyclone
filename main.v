@@ -138,6 +138,7 @@ module main(
 					.enable(DelaySignal),
 					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
 	);
+	
 	wire oneSec;
 	
 	RateDivider Rnd(
@@ -147,7 +148,7 @@ module main(
 					.delay(49999999)
 	);
 	
-	lfsr_updown L0(oneSec, ~reset_n, DelaySignal, 1'b1, rand, overflow);
+	lfsr_updown L0(oneSec, ~reset_n, (ControlMovement == 4'b0001 || ControlMovement == 4'b0101), 1'b1, rand, overflow);
 	
 	assign TD_DATA[1:0] = rand;
 	
