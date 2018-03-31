@@ -133,12 +133,12 @@ module main(
 	
 	
    RateDivider Pmove(
-	wire oneSec;
 					.clk(clk && ~gameOver), 
 					.reset_n(resetn), 
 					.enable(DelaySignal),
 					.delay(1666666) //833332; // 1/60 Hz //49999999; // 1 Hz
 	);
+	wire oneSec;
 	
 	RateDivider Rnd(
 					.clk(clk),
