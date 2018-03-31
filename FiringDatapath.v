@@ -1,4 +1,4 @@
-module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlayer, YPlayer, isShot, escape, fly, fall);
+module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlayer, YPlayer, isShot, escape, fly, fall, leave);
 	input       clk;
 	input       reset_n;
 	input [2:0] control;
@@ -8,6 +8,7 @@ module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlay
 	input [7:0] YBird;
 	input 		fly;
 	input 		fall;
+	input       leave;
 	
 	output reg isShot = 0;
 	output reg escape = 0;
@@ -20,20 +21,18 @@ module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlay
 	localparam HITBOX_X = 4'b1110,
 				  HITBOX_Y = 4'b1001;
 		
-	always @ (posedge clk, negedge reset_n)
+	always @ (posedge clk, negedge reset_n, posedge leave)
 	begin
-		if(~reset_n)
+		if(~reset_n || leave)
 		begin
 			RemainingShots <= 2'b11;
 			isShot <= 0;
+			escape <= 0;
 		end
 		
 		else
 		begin
-			case(control)
-				S_HOLD:
-					escape <= 0;
-				
+			case(control)				
 				S_SHOT: 
 				begin
 					if(RemainingShots > 0)
@@ -50,10 +49,8 @@ module FiringDatapath(clk, reset_n, control, RemainingShots, XBird, YBird, XPlay
 				
 				S_RELOAD:
 				begin
-					isShot <= 0;
-					if(RemainingShots == 0)
+					if(RemainingShots == 0 && ~isShot)
 					begin
-						RemainingShots <= 2'b11;
 						escape <= 1;
 					end
 				end

@@ -9,7 +9,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	
 	output reg [7:0] Xout = 50;
 	output reg [6:0] Yout = 50;
-	output reg [2:0] Colour = 3'b100;
+	output reg [23:0] Colour = CROSSHAIR_COLOUR;
 	output reg       plot   = 0;
 	output reg       enable = 0;
 	output reg		  leave = 0;
@@ -18,7 +18,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	output reg [7:0] XPhold = 50;
 	output reg [6:0] YPhold = 50;
 	output reg [7:0] XBhold = 100;
-	output reg signed [7:0] YBhold = 100;
+	output reg signed [7:0] YBhold = 121;
 	reg [1:0] drawCounter = 2'b00;
 	reg [4:0] XBDraw = 5'b00000;
 	reg [3:0] YBDraw = 4'b0000;
@@ -34,6 +34,22 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			
 	localparam HITBOX_X = 4'b1110,
 				  HITBOX_Y = 4'b1001;
+				  
+				  
+	localparam CROSSHAIR_RED    = 255,
+				  CROSSHAIR_GREEN  = 0,
+				  CROSSHAIR_BLUE   = 0,
+				  BIRDBODY_RED     = 255,
+				  BIRDBODY_GREEN   = 255,
+				  BIRDBODY_BLUE    = 255,
+				  BIRDBEAK_RED     = 230,
+				  BIRDBEAK_GREEN   = 222,
+				  BIRDBEAK_BLUE    = 0,
+				  CROSSHAIR_COLOUR = (CROSSHAIR_RED*65536) + (CROSSHAIR_GREEN*256) + CROSSHAIR_BLUE,
+				  BIRDBODY_COLOUR = (BIRDBODY_RED*65536) + (BIRDBODY_GREEN*256) + BIRDBODY_BLUE,
+				  BIRDBEAK_COLOUR = (BIRDBEAK_RED*65536) + (BIRDBEAK_GREEN*256) + BIRDBEAK_BLUE,
+				  BLACK_COLOUR     = 0;
+	
 	
 	always @ (posedge clk, negedge reset_n)
 	begin
@@ -52,7 +68,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 			case(control)
 				S_P_CLEAR:
 				begin
-					Colour <= 3'b000;
+					Colour <= BLACK_COLOUR;
 				end
 			
 				S_P_LEFT: 
@@ -105,24 +121,24 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				S_P_DRAW: // Draw
 				begin
-					if(PorB && fly && (YBhold + 4 == 0))
+					if(PorB && fly && (YBhold + 10 == 0))
 					begin
 						leave <= 1;
 						XBhold <= 80;
-						YBhold <= 60;
-						Colour <= 3'b111;
+						YBhold <= 121;
+						Colour <= BIRDBODY_COLOUR;
 					end
 					else if (PorB && fall && (YBhold > 120))
 					begin
 						leave <= 1;
 						XBhold <= 80;
-						YBhold <= 60;
-						Colour <= 3'b111;
+						YBhold <= 121;
+						Colour <= BIRDBODY_COLOUR;
 					end
 					else if (PorB)
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else
-						Colour <= 3'b100;
+						Colour <= CROSSHAIR_COLOUR;
 				end
 			endcase
 			
@@ -168,7 +184,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				drawCounter <= drawCounter + 1;
 			end
 			
-			else if(PorB && (control == S_P_CLEAR || control == S_P_DRAW))
+			else if(PorB && (control == S_P_CLEAR || control == S_P_DRAW)) // Bird
 			begin
 				enable <= 0;
 				plot <= 1;
@@ -198,23 +214,23 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				if (control == S_P_DRAW) // Pick C
 				begin
 					if ((YBDraw == 1 || YBDraw == 2) && (XBDraw == 0 || XBDraw == 1 || XBDraw == 2))
-						Colour <= 3'b110;
+						Colour <= BIRDBEAK_COLOUR;
 					else if ((YBDraw == 6) && (XBDraw == 12 || XBDraw == 11))
-						Colour <= 3'b110;
+						Colour <= BIRDBEAK_COLOUR;
 					else if (YBDraw <= 3  && (XBDraw > 2 && XBDraw <= 5))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else if ((YBDraw > 2 && YBDraw <= 6) && (XBDraw > 6 && XBDraw <= 12))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else if ((YBDraw > 2 && YBDraw <= 5) && (XBDraw > 3 && XBDraw <= 13))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else if (YBDraw == 6 && (XBDraw == 5 || XBDraw == 6))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else if (YBDraw == 7 && (XBDraw > 6 && XBDraw <= 9))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else if (YBDraw == 8 && (XBDraw > 6 && XBDraw <= 8))
-						Colour <= 3'b111;
+						Colour <= BIRDBODY_COLOUR;
 					else
-						Colour <= 3'b000;
+						Colour <= BLACK_COLOUR;
 				end
 				
 			end

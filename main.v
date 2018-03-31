@@ -10,6 +10,7 @@ module main(
 		LEDR,
 		HEX0,
 		HEX2,
+		HEX3,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -27,6 +28,7 @@ module main(
 	output [9:0] LEDR;
 	output [6:0] HEX0;
 	output [6:0] HEX2;
+	output [6:0] HEX3;
 	
 	// Declare your inputs and outputs here
 	// Do not change the following outputs
@@ -43,7 +45,7 @@ module main(
 	wire [6:0] Y;
 	wire resetn;
 	wire clk;
-	wire [2:0] colour;
+	wire [23:0] colour;
 	wire [7:0] XPlayer;
 	wire [7:0] XBird;
 	wire [6:0] YPlayer;
@@ -57,7 +59,9 @@ module main(
 	wire       isShot;
 	wire       PorB;
 	wire       gunShot;
-	wire 			escape;
+	wire 		  escape;
+	wire  [3:0] scoreOnes;
+	wire  [3:0] scoreTens;
 		
 	assign resetn  = ~SW[9];
 	assign clk     = CLOCK_50;
@@ -65,7 +69,6 @@ module main(
 	
 	assign LEDR[3:0] = ControlMovement;
 	//assign LEDR[5:4] = ControlFiring;
-	assign LEDR[9] = isShot;
 	
    RateDivider Pmove(
 					.clk(clk), 
@@ -73,27 +76,30 @@ module main(
 					.enable(DelaySignal)
 	);
 		
-	assign LEDR[7] = ControlMovement == 4'b1000;
-	assign LEDR[8] = ControlMovement == 4'b1001;
 	
-	wire [3:0] score;
-	reg [3:0] writeScore = 0;
-	ram32x4 sc(.address(5'b00001),
-					  .clock(clk),
-					  .data(writeScore),
-					  .wren(gunShot || ~resetn),
-					  .q(score)
-						);
-						
-	always @ (posedge clk, negedge resetn)
+	reg [3:0] score = 0;
+	assign LEDR[9:6] = score;
+	
+	assign LEDR[5] = leave;
+	assign LEDR[4] = fall;
+	
+	always @ (negedge resetn, posedge gunShot)
 	begin
-		if (~resetn)
-			writeScore <= 0;
-		else if (isShot)
-			writeScore <= writeScore + 1;
-		else if (RemainingShots == 0)
-			writeScore <= writeScore - 1;
+		if(~resetn)
+			score <= 0;
+		else
+		begin
+			if(isShot)
+				score <= score + 1;
+			else if(escape && score > 0)
+				score <= score - 1;
+			else
+				score <= score;
+		end
 	end
+	
+	assign scoreOnes = score % 10;
+	assign scoreTens = score / 10;	
 	
 	MovementFSM mfsm0( // Takes 14 ticks at most
 					.clk(clk),
@@ -111,7 +117,7 @@ module main(
 					.fly(fly), 
 					.fall(fall), 
 					.leave(leave),
-					.rng(LEDR[5:4])
+					.rng(rng)
 	);
 	
 	MovementDatapath mdp0(
@@ -138,7 +144,8 @@ module main(
 					.clk(DelaySignal), 
 					.reset_n(resetn),
 					.gunShot(gunShot), 
-					.STATE(ControlFiring)
+					.STATE(ControlFiring),
+					.leave(leave)
 	);
 	
 	FiringDatapath fdp0(
@@ -153,7 +160,8 @@ module main(
 						.isShot(isShot),
 						.escape(escape),
 						.fly(fly),
-						.fall(fall)
+						.fall(fall),
+						.leave(leave)
 	);
 	
 	seg7display s0(
@@ -161,9 +169,14 @@ module main(
 				.SW({2'b00, RemainingShots})
 	);
 	
-	seg7display s1(
+	seg7display s2(
 				.HEX(HEX2),
-				.SW(score)
+				.SW(scoreOnes)
+	);
+	
+	seg7display s3(
+				.HEX(HEX3),
+				.SW(scoreTenss)
 	);
 	
 	
@@ -188,6 +201,6 @@ module main(
 			.VGA_CLK(VGA_CLK));
 		defparam VGA.RESOLUTION = "160x120";
 		defparam VGA.MONOCHROME = "FALSE";
-		defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-		defparam VGA.BACKGROUND_IMAGE = "black	.mif";
+		defparam VGA.BITS_PER_COLOUR_CHANNEL = 8;
+		defparam VGA.BACKGROUND_IMAGE = "black.mif";
 endmodule

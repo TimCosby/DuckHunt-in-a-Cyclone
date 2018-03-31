@@ -1,7 +1,8 @@
-module FiringFSM(clk, reset_n, gunShot, STATE);
+module FiringFSM(clk, reset_n, gunShot, STATE, leave);
 	input clk;
 	input reset_n;
 	input gunShot;
+	input leave;
 	
 	output reg [1:0] STATE = S_RELOAD;
 	
@@ -9,9 +10,9 @@ module FiringFSM(clk, reset_n, gunShot, STATE);
 				  S_HOLD   = 2'b01,
 				  S_SHOT   = 2'b11;
 	
-	always @ (posedge clk, negedge reset_n)
+	always @ (posedge clk, negedge reset_n, posedge leave)
 	begin
-		if(~reset_n)
+		if(~reset_n || leave)
 		begin
 			STATE <= S_RELOAD;
 		end
