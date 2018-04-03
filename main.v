@@ -83,10 +83,13 @@ module main(
 	wire [3:0] scoreHundreds;
 	wire [3:0] scoreThousands;
 	wire [1:0] rand;
+	wire [3:0] movementControls;
+	
 	
 	assign resetn    = ~SW[9];
 	assign clk       = CLOCK_50;
-	assign gunShot   = keyboardInput[8];//SW[0];
+	assign gunShot   = keyboardInput[8];//SW[0]; // PLAYER SHOOTING CONTROLS
+	assign movementControls = {keyboardInput[5], keyboardInput[4], keyboardInput[6], keyboardInput[7]}; // PLAYER MOVEMENT CONTROLS
 	assign scoreOnes = score % 10;
 	assign scoreTens = (score / 10) % 10;
 	assign scoreHundreds = (score / 100) % 10;
@@ -146,17 +149,14 @@ module main(
 		end	
 	end
 	
-	reg [50:0] xPix = 0;
-	reg [50:0] yPix = 0;
+	reg [7:0] xPix = 0;
+	reg [7:0] yPix = 0;
 	
 	always @ (posedge clk)
 	begin
 		if(gameOver)
 		begin
 			regEnable <= 1;
-			
-			regX <= xPix +75;
-			regY <= yPix +75;
 			
 			if ((yPix >= 1 && yPix <= 3) && (xPix >= 1  && xPix <= 1 ))
 				regColour <= 0;
@@ -221,6 +221,9 @@ module main(
 				yPix <= 75;
 			else
 				xPix <= xPix + 1;
+				
+			regX <= xPix +75;
+			regY <= yPix +75;
 			
 			//xPix <= xPix + 1;
 			//pixel <= pixel + 1;
@@ -257,7 +260,7 @@ module main(
 	MovementFSM mfsm0(
 					.clk(clk),
 					.reset_n(resetn),
-					.KEY({keyboardInput[5], keyboardInput[4], keyboardInput[6], keyboardInput[7]}),
+					.KEY(movementControls),
 					.STATE(ControlMovement),
 					.doneDrawing(nextState),
 					.delayedClk(DelaySignal),
