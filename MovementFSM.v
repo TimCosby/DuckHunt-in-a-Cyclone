@@ -160,10 +160,10 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 						if(PorB)
 						begin
 							birdTurn <= round * 2;
-							RIGHT <= ~KEY[0];
-							DOWN  <= ~KEY[1];
-							UP    <= ~KEY[2];
-							LEFT  <= ~KEY[3];
+							RIGHT <= KEY[0];
+							DOWN  <= KEY[1];
+							UP    <= KEY[2];
+							LEFT  <= KEY[3];
 							STATE <= S_P_CLEAR;
 						end
 						

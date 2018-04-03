@@ -8,7 +8,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	input			fall;
 	
 	output reg [7:0] Xout = 50;
-	output reg [6:0] Yout = 50;
+	output reg [7:0] Yout = 50;
 	output reg [23:0] Colour = CROSSHAIR_COLOUR;
 	output reg       plot   = 0;
 	output reg       enable = 0;
@@ -22,6 +22,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	reg [1:0] drawCounter = 2'b00;
 	reg [4:0] XBDraw = 5'b00000;
 	reg [3:0] YBDraw = 4'b0000;
+	reg right;
 	
 	localparam S_PREHOLD = 4'b0100,
 				  S_HOLD    = 4'b0000,
@@ -39,15 +40,11 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	localparam CROSSHAIR_RED    = 255,
 				  CROSSHAIR_GREEN  = 0,
 				  CROSSHAIR_BLUE   = 0,
-				  BIRDBODY_RED     = 255,
-				  BIRDBODY_GREEN   = 255,
-				  BIRDBODY_BLUE    = 255,
-				  BIRDBEAK_RED     = 230,
-				  BIRDBEAK_GREEN   = 222,
-				  BIRDBEAK_BLUE    = 0,
 				  CROSSHAIR_COLOUR = (CROSSHAIR_RED*65536) + (CROSSHAIR_GREEN*256) + CROSSHAIR_BLUE,
-				  BIRDBODY_COLOUR = (BIRDBODY_RED*65536) + (BIRDBODY_GREEN*256) + BIRDBODY_BLUE,
-				  BIRDBEAK_COLOUR = (BIRDBEAK_RED*65536) + (BIRDBEAK_GREEN*256) + BIRDBEAK_BLUE,
+				  RED_COLOUR    = (194*65536) + (8*256) + 8,
+				  WHITE_COLOUR  = (255*65536) + (255*256) + 255,
+				  ORANGE_COLOUR = (255*65536) + (108*256) + 0,
+				  BROWN_COLOUR  = (0*65536) + (40*256) + 94,
 				  BLACK_COLOUR     = 0;
 	
 	
@@ -77,6 +74,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 					begin
 						leave <= 0;
 						XBhold <= XBhold - 1;
+						right <= 0;
 					end
 					else if(~PorB && XPhold > 2)
 						XPhold <= XPhold - 1;
@@ -88,6 +86,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 					begin
 						leave <= 0;
 						XBhold <= XBhold + 1;
+						right <= 1;
 					end
 					else if(~PorB && XPhold < 158)
 						XPhold <= XPhold + 1;
@@ -126,17 +125,17 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 						leave <= 1;
 						XBhold <= 80;
 						YBhold <= 121;
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					end
 					else if (PorB && fall && (YBhold > 120))
 					begin
 						leave <= 1;
 						XBhold <= 80;
 						YBhold <= 121;
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					end
 					else if (PorB)
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else
 						Colour <= CROSSHAIR_COLOUR;
 				end
@@ -211,24 +210,118 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				
 				XBDraw <= XBDraw + 1;
 				
-				if (control == S_P_DRAW) // Pick C
+				if (control == S_P_DRAW && fall) // Pick C
 				begin
-					if ((YBDraw == 1 || YBDraw == 2) && (XBDraw == 0 || XBDraw == 1 || XBDraw == 2))
-						Colour <= BIRDBEAK_COLOUR;
+					if ((YBDraw == 7 || YBDraw == 6) && XBDraw == 4)
+						Colour <= WHITE_COLOUR;
+					else if ((YBDraw >= 3 && YBDraw <= 6) &&(XBDraw >= 7 && XBDraw <= 11))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 4 && YBDraw <= 6) && XBDraw == 12)
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 3) &&(XBDraw >= 5 && XBDraw <= 6))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 0 && YBDraw <= 1) && XBDraw == 7)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 3 && XBDraw == 4)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 4 && XBDraw == 6)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 2 && (XBDraw == 8 || XBDraw == 7))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw == 7 || YBDraw == 6) && (XBDraw == 0 || XBDraw == 1 || XBDraw == 2))
+						Colour <= ORANGE_COLOUR;
+					else if ((YBDraw == 2) && (XBDraw == 12 || XBDraw == 11))
+						Colour <= ORANGE_COLOUR;
+					else if ((YBDraw <= 8 && YBDraw >= 5)  && (XBDraw > 2 && XBDraw <= 5))
+						Colour <= BROWN_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 5) && (XBDraw > 6 && XBDraw <= 12))
+						Colour <= WHITE_COLOUR;
+					else if ((YBDraw >= 3 && YBDraw <= 5) && (XBDraw > 3 && XBDraw <= 13))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 2 && (XBDraw == 5 || XBDraw == 6))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 1 && (XBDraw > 6 && XBDraw <= 9))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 0 && (XBDraw > 6 && XBDraw <= 8))
+						Colour <= WHITE_COLOUR;
+					else
+						Colour <= BLACK_COLOUR;
+				end
+				else if (control == S_P_DRAW && right) // Pick C
+				begin
+					if ((YBDraw == 1 || YBDraw == 2) && XBDraw == 10)
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 1 && XBDraw == 11)
+						Colour <= BLACK_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 5) &&(XBDraw >= 3 && XBDraw <= 7))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 4) && XBDraw == 2)
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 5 && YBDraw <= 6) &&(XBDraw >= 8 && XBDraw <= 9))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 7 && YBDraw <= 8) && XBDraw == 7)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 5 && XBDraw == 10)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 4 && XBDraw == 8)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 6 && (XBDraw == 6 || XBDraw == 7))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw == 1 || YBDraw == 2) && (XBDraw >= 12 && XBDraw <= 14))
+						Colour <= ORANGE_COLOUR;
+					else if ((YBDraw == 6) && (XBDraw == 2 || XBDraw == 3))
+						Colour <= ORANGE_COLOUR;
+					else if (YBDraw <= 3  && (XBDraw >= 9 && XBDraw <= 11))
+						Colour <= BROWN_COLOUR;
+					else if ((YBDraw > 2 && YBDraw <= 6) && (XBDraw >= 2 && XBDraw <= 7))
+						Colour <= WHITE_COLOUR;
+					else if ((YBDraw > 2 && YBDraw <= 5) && (XBDraw >= 1 && XBDraw <= 10))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 6 && (XBDraw == 8 || XBDraw == 9))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 7 && (XBDraw >= 5 && XBDraw <= 7))
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 8 && (XBDraw == 6 || XBDraw == 7))
+						Colour <= WHITE_COLOUR;
+					else
+						Colour <= BLACK_COLOUR;
+				end
+				else if (control == S_P_DRAW) // Pick C
+				begin
+					if ((YBDraw == 1 || YBDraw == 2) && XBDraw == 4)
+						Colour <= WHITE_COLOUR;
+					else if (YBDraw == 1 && XBDraw == 3)
+						Colour <= BLACK_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 5) &&(XBDraw >= 7 && XBDraw <= 11))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 2 && YBDraw <= 4) && XBDraw == 12)
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 5 && YBDraw <= 6) &&(XBDraw >= 5 && XBDraw <= 6))
+						Colour <= RED_COLOUR;
+					else if ((YBDraw >= 7 && YBDraw <= 8) && XBDraw == 7)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 5 && XBDraw == 4)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 4 && XBDraw == 6)
+						Colour <= RED_COLOUR;
+					else if (YBDraw == 6 && (XBDraw == 8 || XBDraw == 7))
+						Colour <= RED_COLOUR;	
+					else if ((YBDraw == 1 || YBDraw == 2) && (XBDraw == 0 || XBDraw == 1 || XBDraw == 2))
+						Colour <= ORANGE_COLOUR;
 					else if ((YBDraw == 6) && (XBDraw == 12 || XBDraw == 11))
-						Colour <= BIRDBEAK_COLOUR;
+						Colour <= ORANGE_COLOUR;
 					else if (YBDraw <= 3  && (XBDraw > 2 && XBDraw <= 5))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= BROWN_COLOUR;
 					else if ((YBDraw > 2 && YBDraw <= 6) && (XBDraw > 6 && XBDraw <= 12))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else if ((YBDraw > 2 && YBDraw <= 5) && (XBDraw > 3 && XBDraw <= 13))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else if (YBDraw == 6 && (XBDraw == 5 || XBDraw == 6))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else if (YBDraw == 7 && (XBDraw > 6 && XBDraw <= 9))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else if (YBDraw == 8 && (XBDraw > 6 && XBDraw <= 8))
-						Colour <= BIRDBODY_COLOUR;
+						Colour <= WHITE_COLOUR;
 					else
 						Colour <= BLACK_COLOUR;
 				end

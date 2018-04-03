@@ -14,7 +14,8 @@ module main(
 		HEX3,
 		HEX4,
 		HEX5,
-		TD_DATA,
+		PS2_CLK,
+		PS2_DAT,
 		// The ports below are for the VGA output.  Do not change.
 		VGA_CLK,   						//	VGA Clock
 		VGA_HS,							//	VGA H_SYNC
@@ -29,7 +30,8 @@ module main(
 	input	    	 CLOCK_50;				//	50 MHz
 	input  [9:0] SW;
 	input  [3:0] KEY;
-	output  [1:0] TD_DATA;
+	inout PS2_CLK;
+	inout PS2_DAT;
 	
 	output [9:0] LEDR;
 	output [6:0] HEX0;
@@ -54,8 +56,12 @@ module main(
 	reg [3:0]  round      = 0;
 	reg        gameOver   = 0;
 	
+	reg [7:0] regX;
+	reg [7:0] regY;
+	reg [23:0] regColour;
+	reg  regEnable;
 	wire [7:0] X;
-	wire [6:0] Y;
+	wire [7:0] Y;
 	wire resetn;
 	wire clk;
 	wire [23:0] colour;
@@ -80,14 +86,23 @@ module main(
 	
 	assign resetn    = ~SW[9];
 	assign clk       = CLOCK_50;
-	assign gunShot   = SW[0];
+	assign gunShot   = keyboardInput[8];//SW[0];
 	assign scoreOnes = score % 10;
 	assign scoreTens = (score / 10) % 10;
 	assign scoreHundreds = (score / 100) % 10;
 	assign scoreThousands = (score / 1000) % 10;
 	
-	assign LEDR[7:0] = birds[7:0];
-	assign LEDR[9:8] = rand;
+	assign LEDR[9:0] = birds[9:0];
+	
+	wire [9:0] keyboardInput;
+	
+	keyboard_interface_test_mode0(
+								.CLOCK_50(clk),
+								.KEY(4'b1111),
+								.PS2_CLK(PS2_CLK),
+								.PS2_DAT(PS2_DAT),
+								.LEDR(keyboardInput)
+	 );
 	
 	always @ (negedge resetn, posedge leave)
 	begin
@@ -96,9 +111,9 @@ module main(
 			birds      <= 10'b1111111111;
 			birdsAlive <= 0;
 			birdsDead  <= 0;
-			score <= 0;
-			gameOver <= 0;
-			round <= 0;
+			score      <= 0;
+			gameOver   <= 0;
+			round      <= 0;
 		end
 		else if(leave)
 		begin
@@ -117,7 +132,7 @@ module main(
 				
 			if(birdsAlive + birdsDead == 9)
 			begin
-				if(birdsAlive >= birdsDead)
+				if(birdsAlive >= birdsDead && round != 4'b1111)
 				begin
 					birds      <= 10'b1111111111;
 					birdsAlive <= 0;
@@ -129,6 +144,95 @@ module main(
 					gameOver <= 1;
 			end
 		end	
+	end
+	
+	reg [50:0] xPix = 0;
+	reg [50:0] yPix = 0;
+	
+	always @ (posedge clk)
+	begin
+		if(gameOver)
+		begin
+			regEnable <= 1;
+			
+			regX <= xPix +75;
+			regY <= yPix +75;
+			
+			if ((yPix >= 1 && yPix <= 3) && (xPix >= 1  && xPix <= 1 ))
+				regColour <= 0;
+			else if ((yPix >= 3  && yPix <= 3 ) && (xPix >= 2  && xPix <= 2 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 4  && xPix <= 4 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 1 ) && (xPix >= 2  && xPix <= 3 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 1 ) && (xPix >= 6  && xPix <= 6 ))
+				regColour <= 0;
+			else if ((yPix >= 3  && yPix <= 4 ) && (xPix >= 6  && xPix <= 7 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 9  && xPix <= 9 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 4 ) && (xPix >= 11  && xPix <= 11 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 4 ) && (xPix >= 13  && xPix <= 13 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 15  && xPix <= 15 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 1 ) && (xPix >= 17  && xPix <= 19 ))
+				regColour <= 0;
+			else if ((yPix >= 3  && yPix <= 3 ) && (xPix >= 4  && xPix <= 19 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 3 ) && (xPix >= 26  && xPix <= 27 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 29  && xPix <= 29 ))
+				regColour <= 0;
+			else if ((yPix >= 4  && yPix <= 4 ) && (xPix >= 30  && xPix <= 30 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 3 ) && (xPix >= 31  && xPix <= 32 ))
+				regColour <= 0;
+			else if ((yPix >= 4  && yPix <= 4 ) && (xPix >= 33  && xPix <= 33 ))
+				regColour <= 0;
+			else if ((yPix >= 4  && yPix <= 4 ) && (xPix >= 33  && xPix <= 33 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 34  && xPix <= 34 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 1 ) && (xPix >= 36  && xPix <= 38 ))
+				regColour <= 0;
+			else if ((yPix >= 3  && yPix <= 3 ) && (xPix >= 36  && xPix <= 38 ))
+				regColour <= 0;
+			else if ((yPix >= 0  && yPix <= 4 ) && (xPix >= 39  && xPix <= 39 ))
+				regColour <= 0;
+			else if ((yPix >= 1  && yPix <= 1 ) && (xPix >= 41  && xPix <= 42 ))
+				regColour <= 0;
+			else if ((yPix >= 3  && yPix <= 4 ) && (xPix >= 41  && xPix <= 42 ))
+				regColour <= 0;
+			else if ((yPix >= 2  && yPix <= 2 ) && (xPix >= 43  && xPix <= 43 ))
+				regColour <= 0;
+			else
+				regColour <= (255*65536) + (255*256) + 255;
+			
+			if(xPix >= 43)
+			begin
+				xPix <= 75;
+				if(yPix != 4)
+					yPix <= yPix + 1;
+			end
+			else if(yPix == 5+75)
+				yPix <= 75;
+			else
+				xPix <= xPix + 1;
+			
+			//xPix <= xPix + 1;
+			//pixel <= pixel + 1;
+		end
+		
+		else
+		begin
+			regX <= X;
+			regY <= Y;
+			regColour <= colour;
+			regEnable <= writeEn;
+		end
 	end
 	
 	
@@ -148,14 +252,12 @@ module main(
 					.delay(49999999)
 	);
 	
-	lfsr_updown L0(oneSec, ~reset_n, (ControlMovement == 4'b0001 || ControlMovement == 4'b0101), 1'b1, rand, overflow);
-	
-	assign TD_DATA[1:0] = rand;
+	lfsr_updown L0(oneSec, ~resetn, 1'b1, 1'b1, rand, overflow);
 	
 	MovementFSM mfsm0(
 					.clk(clk),
 					.reset_n(resetn),
-					.KEY(KEY),
+					.KEY({keyboardInput[5], keyboardInput[4], keyboardInput[6], keyboardInput[7]}),
 					.STATE(ControlMovement),
 					.doneDrawing(nextState),
 					.delayedClk(DelaySignal),
@@ -251,10 +353,10 @@ module main(
 	vga_adapter VGA(
 			.resetn(resetn),
 			.clock(clk),
-			.colour(colour),
-			.x(X),
-			.y(Y),
-			.plot(writeEn),
+			.colour(regColour),
+			.x(regX),
+			.y(regY),
+			.plot(regEnable),
 			/* Signals for the DAC to drive the monitor. */
 			.VGA_R(VGA_R),
 			.VGA_G(VGA_G),
