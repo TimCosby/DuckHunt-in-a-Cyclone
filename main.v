@@ -67,8 +67,8 @@ module main(
 	wire [23:0] colour;
 	wire [7:0] XPlayer;
 	wire [7:0] XBird;
-	wire [6:0] YPlayer;
-	wire [6:0] YBird;
+	wire [7:0] YPlayer;
+	wire [7:0] YBird;
 	wire [3:0] ControlMovement;
 	wire [3:0] ControlBird;
 	wire [2:0] ControlFiring;
@@ -247,15 +247,31 @@ module main(
 	);
 	
 	wire oneSec;
+	wire oneSec2;
+	wire oneSecSwitch;
+
+	RateDivider Rnd3(
+					.clk(clk),
+					.reset_n(resetn),
+					.enable(oneSec),
+					.delay(74999999)
+	);
 	
 	RateDivider Rnd(
 					.clk(clk),
 					.reset_n(resetn),
-					.enable(oneSec),
-					.delay(49999999)
+					.enable(oneSec2),
+					.delay(59999999/(round + 1))
 	);
 	
-	lfsr_updown L0(oneSec, ~resetn, 1'b1, 1'b1, rand, overflow);
+	RateDivider Rnd1(
+					.clk(clk),
+					.reset_n(resetn),
+					.enable(oneSecSwitch),
+					.delay(35999999/(round + 1))
+	);
+	
+	lfsr_updown L0((oneSec2 ^ oneSec) && oneSecSwitch, ~resetn, 1'b1, 1'b1, rand, overflow);
 	
 	MovementFSM mfsm0(
 					.clk(clk),

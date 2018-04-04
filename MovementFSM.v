@@ -9,7 +9,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 	input outOfAmmo;
 	input RandX;
 	input RandY;
-	input [3:0] round;
+	input [5:0] round;
 	
 	input leave;
 	output reg fly;
@@ -23,7 +23,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 	reg UP;
 	reg LEFT;
 	
-	reg birdTurn;
+	reg [5:0] birdTurn;
 	reg reset;
 	
 	localparam S_PREHOLD   = 4'b0100,
@@ -45,7 +45,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 			STATE <= S_P_CLEAR;
 			reset <= 1;
 			PorB  <= 0;
-			birdTurn <= round * 2;
+			birdTurn <= round;
 		end
 		
 		else
@@ -151,6 +151,10 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 							STATE <= S_P_RIGHT;
 						else if(LEFT)
 							STATE <= S_P_LEFT;
+						else if(DOWN)
+							STATE <= S_P_DOWN;
+						else
+							STATE <= S_P_UP;
 					end
 				
 					else if(doneDrawing)
@@ -159,7 +163,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 						
 						if(PorB)
 						begin
-							birdTurn <= round * 2;
+							birdTurn <= round;
 							RIGHT <= KEY[0];
 							DOWN  <= KEY[1];
 							UP    <= KEY[2];
@@ -198,7 +202,7 @@ module MovementFSM(clk, reset_n, KEY, STATE, doneDrawing, delayedClk, isShot, ou
 					PorB  <= 0;
 					fly   <= 0;
 					fall  <= 0;
-					birdTurn <= round * 2;
+					birdTurn <= round;
 				end
 			endcase
 		end

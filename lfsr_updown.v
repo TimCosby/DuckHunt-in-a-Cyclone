@@ -30,12 +30,12 @@ overflow      // Overflow output
 	 begin
 		 if (up_down) 
 		 begin
-			count <= {~(^(count & `WIDTH'b00100011)),count[`WIDTH-1:1]};
+			count <= {~(^(count & `WIDTH'b01100111)),count[`WIDTH-1:1]};
 		end 
 		
 		else 
 		begin
-			count <= {count[`WIDTH-2:0],~(^(count &  `WIDTH'b10110101))};
+			count <= {count[`WIDTH-2:0],~(^(count &  `WIDTH'b01110100))};
 		 end
 	 end
 endmodule

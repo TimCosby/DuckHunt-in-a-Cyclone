@@ -16,7 +16,7 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 	
 	reg       reset = 0;
 	output reg [7:0] XPhold = 50;
-	output reg [6:0] YPhold = 50;
+	output reg [7:0] YPhold = 50;
 	output reg [7:0] XBhold = 100;
 	output reg signed [7:0] YBhold = 121;
 	reg [1:0] drawCounter = 2'b00;
@@ -41,10 +41,10 @@ module MovementDatapath(clk, reset_n, control, Xout, Yout, Colour, plot, enable,
 				  CROSSHAIR_GREEN  = 0,
 				  CROSSHAIR_BLUE   = 0,
 				  CROSSHAIR_COLOUR = (CROSSHAIR_RED*65536) + (CROSSHAIR_GREEN*256) + CROSSHAIR_BLUE,
-				  RED_COLOUR    = (194*65536) + (8*256) + 8,
-				  WHITE_COLOUR  = (255*65536) + (255*256) + 255,
-				  ORANGE_COLOUR = (255*65536) + (108*256) + 0,
-				  BROWN_COLOUR  = (0*65536) + (40*256) + 94,
+				  RED_COLOUR       = (194*65536) + (8*256) + 8,
+				  WHITE_COLOUR     = (255*65536) + (255*256) + 255,
+				  ORANGE_COLOUR    = (255*65536) + (108*256) + 0,
+				  BROWN_COLOUR     = (0*65536) + (40*256) + 94,
 				  BLACK_COLOUR     = 0;
 	
 	
